@@ -14,7 +14,6 @@ module Card(clk, reset, start, color, o_Deck);
     localparam  S_IDLE = 1'b0, S_SHUFFLE = 1'b1;
     //----------------- wire connection -----------------//
     logic [3:0] value;
-    assign card = {color, value};// 2 bits for color, 4 bits for value
 
     //----------------- sequential signal definition -----------------//
     logic [5:0] Deck_w [107:0];
@@ -68,6 +67,7 @@ module Card(clk, reset, start, color, o_Deck);
             end
             counter_r <= 7'b0;
             end_index_r <= 7'd'107;
+            lfsr_r <= 7'b0;
         end
         else begin
             state_r <= state_w;
@@ -76,6 +76,7 @@ module Card(clk, reset, start, color, o_Deck);
             end
             counter_r <= counter_w;
             end_index_r <= end_index_w;
+            lfsr_r <= lfsr_w;
         end
     end
 endmodule
