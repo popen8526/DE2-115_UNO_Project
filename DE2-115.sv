@@ -139,7 +139,11 @@ module DE2_115 (
 wire i_clk_25M;
 wire i_rst_n = KEY[0];
 // TODO: Using Qsys to generate PLL to create "i_clk_25M"
-
+audio audio_inst (
+    .altpll_1_c0_clk(i_clk_25M), // Connect the output clock
+    .altpll_1_inclk_interface_clk(CLOCK_50),
+    .altpll_1_inclk_interface_reset_reset(i_rst_n),
+);
 vga VGA_inst (
     .i_rst_n(i_rst_n),
     .i_clk_25M(i_clk_25M),
