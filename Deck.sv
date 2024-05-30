@@ -12,7 +12,7 @@ module Deck(clk, reset, start, o_Deck, in_use, insert, insert_card, done);
     input [5:0] insert_card;
     output done;
     //----------------- fsm state definition -----------------//
-    localparam  S_IDLE = 2'b00, S_SHUFFLE = 2'b01, S_WAIT_INSERT = 2'b10, S_INSERT = 2'b11;
+    localparam  S_IDLE = 3'b000, S_SHUFFLE = 3'b001, S_WAIT_INSERT = 3'b010, S_INSERT = 3'b011, S_INIT = 3'b100;
     //----------------- wire connection -----------------//
     logic [3:0] value;
 
@@ -21,7 +21,7 @@ module Deck(clk, reset, start, o_Deck, in_use, insert, insert_card, done);
     logic [5:0] Deck_r [107:0]; // 108 cards in the deck
     logic [6:0] counter_w, counter_r;
     logic [6:0] lfsr_w, lfsr_r; // Add LFSR registers
-    logic [1:0] state_w, state_r;
+    logic [2:0] state_w, state_r;
     logic [6:0] end_index_w, end_index_r;
 
     assign o_Deck = Deck_r;
