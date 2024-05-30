@@ -79,6 +79,7 @@ module Computer(clk, reset, init, start, hands, prev_card, out_cards, draw_card,
             S_INIT: begin // recieve the initial hands, draw 7 cards
                 if(red_iter_r < 7) begin
                     state_w = S_DRAW;
+                    draw_card_w = 1'b1;
                 end
             end
             S_DRAW: begin

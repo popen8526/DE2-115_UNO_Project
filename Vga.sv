@@ -1,5 +1,3 @@
-// Date: 2020/12/04
-// Author: Chien-Kai Ma
 // Reference: https://www.itread01.com/content/1549104121.html
 module vga(
     input  i_rst_n,
