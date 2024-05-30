@@ -4,12 +4,13 @@
 // 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9
 // 10: skip, 11: reverse, 12: draw two, 13: wild, 14: wild draw four
 
-module Deck(clk, reset, start, o_Deck, in_use, insert, insert_card); 
+module Deck(clk, reset, start, o_Deck, in_use, insert, insert_card, done); 
     //----------------- port definition -----------------//
     input clk, reset, start, insert;
     output [5:0] o_Deck [107:0];
     input in_use;
     input [5:0] insert_card;
+    output done;
     //----------------- fsm state definition -----------------//
     localparam  S_IDLE = 2'b00, S_SHUFFLE = 2'b01, S_WAIT_INSERT = 2'b10, S_INSERT = 2'b11;
     //----------------- wire connection -----------------//
@@ -32,6 +33,7 @@ module Deck(clk, reset, start, o_Deck, in_use, insert, insert_card);
         end_index_w = end_index_r;
         case(state_r)
             S_INIT: begin
+                done = 1'b0;
                 state_w = S_IDLE;
                 Deck_w[0] = {2'b00, 4'b0000}; // red 0
                 Deck_w[1] = {2'b00, 4'b0001}; // red 1
@@ -146,6 +148,7 @@ module Deck(clk, reset, start, o_Deck, in_use, insert, insert_card);
                 Deck_w[107] = {2'b11, 4'b1110}; // blue wild draw four
             end
             S_IDLE: begin
+                done = 1'b1;
                 counter_w = counter_r + 1; // start counting
                 if (start) begin
                     state_w = S_SHUFFLE;
@@ -163,6 +166,7 @@ module Deck(clk, reset, start, o_Deck, in_use, insert, insert_card);
                 end
             end
             S_SHUFFLE: begin
+                done = 1'b0;
                 lfsr_w = {lfsr_r[3]^lfsr_r[0], lfsr_r[6], lfsr_r[5], lfsr_r[4], lfsr_r[3], lfsr_r[2], lfsr_r[1]};
                 if(lfsr_w[6:0] > end_index) begin
                     state_w = S_SHUFFLE;// if rand_num > end_index , shuffle again
@@ -175,10 +179,12 @@ module Deck(clk, reset, start, o_Deck, in_use, insert, insert_card);
                 end
             end
             S_WAIT_INSERT: begin
+                done = 1'b0;
                 if(insert) state_w = S_INSERT;
                 else state_w = in_use ? S_IDLE : S_WAIT_INSERT;
             end
             S_INSERT: begin
+                done = 1'b0;
                 Deck_w[end_index_r] = insert_card;
                 end_index_w = end_index_r + 1;
                 state_w = S_WAIT_INSERT;
