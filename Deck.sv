@@ -4,13 +4,14 @@
 // 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9
 // 10: skip, 11: reverse, 12: draw two, 13: wild, 14: wild draw four
 
-module Deck(clk, reset, start, o_Deck); 
+module Deck(clk, reset, start, o_Deck, in_use, insert, insert_card); 
     //----------------- port definition -----------------//
-    input clk, reset, start;
+    input clk, reset, start, insert;
     output [5:0] o_Deck [107:0];
-
+    input in_use;
+    input [5:0] insert_card;
     //----------------- fsm state definition -----------------//
-    localparam  S_IDLE = 1'b0, S_SHUFFLE = 1'b1;
+    localparam  S_IDLE = 2'b00, S_SHUFFLE = 2'b01, S_WAIT_INSERT = 2'b10, S_INSERT = 2'b11;
     //----------------- wire connection -----------------//
     logic [3:0] value;
 
@@ -30,8 +31,8 @@ module Deck(clk, reset, start, o_Deck);
         state_w = state_r;
         end_index_w = end_index_r;
         case(state_r)
-            S_IDLE: begin
-                counter_w = counter_r + 1; // start counting
+            S_INIT: begin
+                state_w = S_IDLE;
                 Deck_w[0] = {2'b00, 4'b0000}; // red 0
                 Deck_w[1] = {2'b00, 4'b0001}; // red 1
                 Deck_w[2] = {2'b00, 4'b0001}; 
@@ -143,10 +144,19 @@ module Deck(clk, reset, start, o_Deck);
                 Deck_w[105] = {2'b11, 4'b1100};
                 Deck_w[106] = {2'b11, 4'b1101}; // blue wild
                 Deck_w[107] = {2'b11, 4'b1110}; // blue wild draw four
-
+            end
+            S_IDLE: begin
+                counter_w = counter_r + 1; // start counting
                 if (start) begin
                     state_w = S_SHUFFLE;
                     lfsr_w = counter_r;
+                end
+                else if (!in_use) begin // if the deck is not in use, reset the deck
+                    for (int i = 0; i < 108; i++) begin
+                        Deck_w[i] = 0;
+                    end
+                    end_index_w = 0;
+                    state_w = S_WAIT_INSERT;
                 end
                 else begin
                     state_w = S_IDLE;
@@ -164,12 +174,21 @@ module Deck(clk, reset, start, o_Deck);
                     state_w = (end_index_r > 0) ? S_SHUFFLE : S_IDLE;
                 end
             end
+            S_WAIT_INSERT: begin
+                if(insert) state_w = S_INSERT;
+                else state_w = in_use ? S_IDLE : S_WAIT_INSERT;
+            end
+            S_INSERT: begin
+                Deck_w[end_index_r] = insert_card;
+                end_index_w = end_index_r + 1;
+                state_w = S_WAIT_INSERT;
+            end
         endcase
     end
     //----------------- sequential part -----------------//
     always_ff @(posedge i_clk or negedge i_rst_n) begin
         if (~i_rst_n) begin
-            state_r <= S_IDLE;
+            state_r <= S_INIT;
             for (int i = 0; i < 108; i++) begin
                 Deck_r[i] <= 6'b0;
             end
