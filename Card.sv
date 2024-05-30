@@ -4,10 +4,9 @@
 // 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9
 // 10: skip, 11: reverse, 12: draw two, 13: wild, 14: wild draw four
 
-module Card(clk, reset, start, color, o_Deck); 
+module Card(clk, reset, start, o_Deck); 
     //----------------- port definition -----------------//
     input clk, reset, start;
-    input [1:0] color;
     output [5:0] o_Deck [107:0];
 
     //----------------- fsm state definition -----------------//
