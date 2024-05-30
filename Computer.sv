@@ -1,6 +1,6 @@
-module Computer(clk, reset, init, start, hands, prev_card, out_cards, draw_card, skip, draw_two, draw_four, drawed_card, out);
+module Computer(clk, reset, init, start, hands, prev_card, out_cards, draw_card, draw_two, draw_four, drawed_card, out);
     //----------------- port definition -----------------//
-    input clk, reset, init, start, skip, draw_two, draw_four;
+    input clk, reset, init, start,draw_two, draw_four;
     input [5:0] hands [20:0];
     input [5:0] prev_card;
     output [5:0] out_cards; // output cards
@@ -8,7 +8,7 @@ module Computer(clk, reset, init, start, hands, prev_card, out_cards, draw_card,
     output draw_card; // decide whether to draw a card
     input [5:0] drawed_card; // the card that the player drawed
     //----------------- fsm state definition -----------------//
-    localparam [2:0] S_IDLE = 3'b000, S_DRAW = 3'b001, S_OUT = 3'b010, S_SKIP = 3'b011, S_CHECK_COLOR = 3'b100, S_CHECK_NUM = 3'b101, S_INIT = 3'b110, S_SEARCH_NUM = 3'b111;
+    localparam [2:0] S_IDLE = 3'b000, S_DRAW = 3'b001, S_OUT = 3'b010, S_CHECK_COLOR = 3'b100, S_CHECK_NUM = 3'b101, S_INIT = 3'b110, S_SEARCH_NUM = 3'b111;
     //----------------- sequential signal definition -----------------//
     logic [5:0] red_hands_w [20:0];
     logic [5:0] red_hands_r [20:0];
@@ -69,9 +69,6 @@ module Computer(clk, reset, init, start, hands, prev_card, out_cards, draw_card,
                 else if(init) begin // if it's the initial hands
                     state_w = S_INIT;
                 end
-                else if (skip) begin
-                    state_w = S_SKIP; // skip the turn
-                end
                 else begin
                     state_w = S_IDLE;
                 end
@@ -84,33 +81,39 @@ module Computer(clk, reset, init, start, hands, prev_card, out_cards, draw_card,
             end
             S_DRAW: begin
                 number_exist_w[drawed_card[3:0]] = number_exist_r[drawed_card[3:0]] + 1;
-                case(drawed_card[5:4])
-                    2'b00: begin // red
-                        red_hands_w[red_num_r] = drawed_card;
-                        red_num_w = red_num_r + 1;
-                    end
-                    2'b01: begin // yellow
-                        yellow_hands_w[yellow_num_r] = drawed_card;
-                        yellow_num_w = yellow_num_r + 1;
-                    end
-                    2'b10: begin // green
-                        green_hands_w[green_num_r] = drawed_card;
-                        green_num_w = green_num_r + 1;
-                    end
-                    2'b11: begin // blue
-                        blue_hands_w[blue_num_r] = drawed_card;
-                        blue_num_w = blue_num_r + 1;
-                    end
-                endcase
+                if(drawed_card[3:0] == 4'b1101) begin // if the card is wild
+                    wild_hands_w[number_exist_r[13]] = drawed_card;
+                    number_exist_w[13] = number_exist_r[13] + 1;
+                end
+                else if (drawed_card[3:0] == 4'b1110) begin // if the card is wild draw four
+                wildf_hands_r[number_exist_r[14]] = drawed_card;
+                    number_exist_w[14] = number_exist_r[14] + 1;
+                end
+                else begin
+                    case(drawed_card[5:4])
+                        2'b00: begin // red
+                            red_hands_w[red_num_r] = drawed_card;
+                            red_num_w = red_num_r + 1;
+                        end
+                        2'b01: begin // yellow
+                            yellow_hands_w[yellow_num_r] = drawed_card;
+                            yellow_num_w = yellow_num_r + 1;
+                        end
+                        2'b10: begin // green
+                            green_hands_w[green_num_r] = drawed_card;
+                            green_num_w = green_num_r + 1;
+                        end
+                        2'b11: begin // blue
+                            blue_hands_w[blue_num_r] = drawed_card;
+                            blue_num_w = blue_num_r + 1;
+                        end
+                    endcase
+                end
             end
             S_OUT: begin
                 out = 1'b1; // play the card
             end
-            S_SKIP: begin
-                state_w = S_IDLE; // skip the turn
-            end
             S_CHECK_COLOR: begin
-                search_card = 6'b111111; // initialize the search card to NONE card
                 iter_w = 7'b0;
                 case(prev_card[5:4])
                     2'b00: begin // red
@@ -395,18 +398,40 @@ module Computer(clk, reset, init, start, hands, prev_card, out_cards, draw_card,
     //----------------- sequential part -----------------//
     always_ff @(posedge clk or posedge reset) begin : 
         if(reset) begin
-            hands_r = 7'b0;
-            prev_card_r = 6'b0;
-            out_cards_r = 7'b0;
-            draw_card_r = 6'b0;
-            state_r = S_IDLE;
+            state_r = S_INIT;
+            for(int i = 0; i < 21; i = i + 1) begin
+                red_hands_r[i] = 6'b0;
+                blue_hands_r[i] = 6'b0;
+                green_hands_r[i] = 6'b0;
+                yellow_hands_r[i] = 6'b0;
+                wild_hands_r[i] = 6'b0;
+                wildf_hands_r[i] = 6'b0;
+            end
+            red_num_r = 7'b0;
+            blue_num_r = 7'b0;
+            green_num_r = 7'b0;
+            yellow_num_r = 7'b0;
+            draw_card_r = 1'b0;
+            drawed_card_r = 6'b0;
+            out_cards_r = 6'b0;
         end
         else begin
-            hands_r = hands_w;
-            prev_card_r = prev_card_w;
-            out_cards_r = out_cards_w;
-            draw_card_r = draw_card_w;
             state_r = state_w;
+            for(int i = 0; i < 21; i = i + 1) begin
+                red_hands_r[i] = red_hands_w[i];
+                blue_hands_r[i] = blue_hands_w[i];
+                green_hands_r[i] = green_hands_w[i];
+                yellow_hands_r[i] = yellow_hands_w[i];
+                wild_hands_r[i] = wild_hands_w[i];
+                wildf_hands_r[i] = wildf_hands_w[i];
+            end
+            red_num_r = red_num_w;
+            blue_num_r = blue_num_w;
+            green_num_r = green_num_w;
+            yellow_num_r = yellow_num_w;
+            draw_card_r = draw_card_w;
+            drawed_card_r = drawed_card_w;
+            out_cards_r = out_cards_w;
         end
     end
 endmodule
