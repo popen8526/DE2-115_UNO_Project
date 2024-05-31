@@ -4,36 +4,52 @@
 // 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9
 // 10: skip, 11: reverse, 12: draw two, 13: wild, 14: wild draw four
 
-module Deck(clk, reset, start, o_Deck, in_use, insert, insert_card, done); 
+module Deck(i_clk, i_rst_n, i_start, i_in_use, i_draw1, i_draw2, i_draw4, i_insert, i_insert_card, o_next_card, o_done, o_empty);
     //----------------- port definition -----------------//
-    input clk, reset, start, insert;
-    output [5:0] o_Deck [107:0];
-    input in_use;
-    input [5:0] insert_card;
-    output done;
+    input i_clk, i_rst_n, i_start, i_insert, i_draw1, i_draw2, i_draw4;
+    output [5:0] o_next_card;
+    input i_in_use;
+    input [5:0] i_insert_card;
+    output o_done;
+    output o_empty;
     //----------------- fsm state definition -----------------//
-    localparam  S_IDLE = 3'b000, S_SHUFFLE = 3'b001, S_WAIT_INSERT = 3'b010, S_INSERT = 3'b011, S_INIT = 3'b100;
+    localparam S_IDLE        = 4'd0;
+    localparam S_SHUFFLE     = 4'd1;
+    localparam S_WAIT_INSERT = 4'd2;
+    localparam S_INSERT      = 4'd3;
+    localparam S_INIT        = 4'd4;
+    localparam S_DRAW        = 4'd5;
+    localparam S_DRAW2       = 4'd6;
+    localparam S_DRAW4_2     = 4'd7;
+    localparam S_DRAW4_3     = 4'd8;
+    localparam S_DRAW4_4     = 4'd9;
+    localparam S_SET         = 4'd10;
+
     //----------------- wire connection -----------------//
-    logic [3:0] value;
+    // logic [3:0] value;
 
     //----------------- sequential signal definition -----------------//
     logic [5:0] Deck_w [107:0];
     logic [5:0] Deck_r [107:0]; // 108 cards in the deck
     logic [6:0] counter_w, counter_r;
     logic [6:0] lfsr_w, lfsr_r; // Add LFSR registers
-    logic [2:0] state_w, state_r;
+    logic [3:0] state_w, state_r;
     logic [6:0] end_index_w, end_index_r;
+    logic [6:0] front_index_w, front_index_r; // indicate which card to be drawn
+    logic       empty_w, empty_r; // pull up if deck has less than four cards
+    logic [1:0] remain_w, remain_r; // indicate remaining card number
 
-    assign o_Deck = Deck_r;
+    // assign o_Deck = Deck_r;
+    assign o_empty = empty_r;
     //----------------- combinational part -----------------//
-    always_comb begin : 
+    always_comb begin
         counter_w = counter_r;
         lfsr_w = lfsr_r;
         state_w = state_r;
         end_index_w = end_index_r;
         case(state_r)
             S_INIT: begin
-                done = 1'b0;
+                o_done = 1'b0;
                 state_w = S_IDLE;
                 Deck_w[0] = {2'b00, 4'b0000}; // red 0
                 Deck_w[1] = {2'b00, 4'b0001}; // red 1
@@ -148,13 +164,13 @@ module Deck(clk, reset, start, o_Deck, in_use, insert, insert_card, done);
                 Deck_w[107] = {2'b11, 4'b1110}; // blue wild draw four
             end
             S_IDLE: begin
-                done = 1'b1;
+                o_done = 1'b0;
                 counter_w = counter_r + 1; // start counting
                 if (start) begin
                     state_w = S_SHUFFLE;
                     lfsr_w = counter_r;
                 end
-                else if (!in_use) begin // if the deck is not in use, reset the deck
+                else if (!i_in_use) begin // if the deck is not in use, reset the deck
                     for (int i = 0; i < 108; i++) begin
                         Deck_w[i] = 0;
                     end
@@ -166,7 +182,7 @@ module Deck(clk, reset, start, o_Deck, in_use, insert, insert_card, done);
                 end
             end
             S_SHUFFLE: begin
-                done = 1'b0;
+                o_done = 1'b0;
                 lfsr_w = {lfsr_r[3]^lfsr_r[0], lfsr_r[6], lfsr_r[5], lfsr_r[4], lfsr_r[3], lfsr_r[2], lfsr_r[1]};
                 if(lfsr_w[6:0] > end_index) begin
                     state_w = S_SHUFFLE;// if rand_num > end_index , shuffle again
@@ -175,19 +191,103 @@ module Deck(clk, reset, start, o_Deck, in_use, insert, insert_card, done);
                     Deck_w[end_index_r] = Deck_r[lfsr_r[6:0]];
                     Deck_w[lfsr_r[6:0]] = Deck_r[end_index_r];
                     end_index_w = end_index_r - 1;
-                    state_w = (end_index_r > 0) ? S_SHUFFLE : S_IDLE;
+                    state_w = (end_index_r > 0) ? S_SHUFFLE : S_DRAW;
+                    front_index_w = 6'd0;
                 end
             end
             S_WAIT_INSERT: begin
-                done = 1'b0;
-                if(insert) state_w = S_INSERT;
-                else state_w = in_use ? S_IDLE : S_WAIT_INSERT;
+                o_done = 1'b0;
+                if(i_insert) state_w = S_INSERT;
+                else state_w = i_in_use ? S_SHUFFLE : S_WAIT_INSERT;
             end
             S_INSERT: begin
-                done = 1'b0;
-                Deck_w[end_index_r] = insert_card;
+                o_done = 1'b0;
+                Deck_w[end_index_r] = i_insert_card;
                 end_index_w = end_index_r + 1;
                 state_w = S_WAIT_INSERT;
+            end
+            S_DRAW: begin
+                o_done = 1'b1;
+                o_next_card = Deck_r[front_index_r];
+                if(i_draw1) begin           // draw one card
+                    if(front_index_r >= end_index_r - 3) begin
+                        empty_w = 1'b1;
+                        front_index_w = front_index_r + 1;
+                        remain_w = 2'b0;
+                        state_w = S_SET;
+                    end
+                    else begin
+                        empty_w = 1'b0;
+                        front_index_w = front_index_r + 1;
+                        state_w = S_DRAW;
+                    end
+                end
+                else if(i_draw2) begin      // consecutive draw two
+                    empty_w = 1'b0;
+                    front_index_w = front_index_r + 1;
+                    state_w = S_DRAW2;
+                end
+                else if(i_draw4) begin      // consecutive draw four
+                    empty_w = 1'b0;
+                    front_index_w = front_index_r + 1;
+                    state_w = S_DRAW4_2;
+                end
+                else begin                  // wait draw
+                    empty_w = 1'b0;
+                    front_index_w = front_index_r;
+                    state_w = S_DRAW;
+                end
+            end
+            S_DRAW2: begin
+                front_index_w = front_index_r + 1;
+                if(front_index_r >= end_index_r - 3) begin
+                    empty_w = 1'b1;
+                    remain_w = 2'd0;
+                    state_w = S_SET;
+                end
+                else begin
+                    empty_w = 1'b0;
+                    state_w = S_DRAW;
+                end
+            end
+            S_DRAW4_2: begin
+                empty_w = 1'b0;
+                front_index_w = front_index_r + 1;
+                state_w = S_DRAW4_3;
+            end
+            S_DRAW4_3: begin
+                empty_w = 1'b0;
+                front_index_w = front_index_r + 1;
+                state_w = S_DRAW4_4;
+            end
+            S_DRAW4_4: begin
+                front_index_w = front_index_r + 1;
+                if(front_index_r >= end_index_r - 3) begin
+                    empty_w = 1'b1;
+                    remain_w = 2'd0;
+                    state_w = S_SET;
+                end
+                else begin
+                    empty_w = 1'b0;
+                    state_w = S_DRAW;
+                end
+            end
+            S_SET: begin // remove residual card to the front of the deck
+                o_done = 1'b0;
+                empty_w = 1'b1;
+                Deck_w[remain] = Deck_r[front_index_r];
+                if(front_index_r >= end_index_r) begin
+                    end_index_w = remain_r + 1;
+                    front_index_w = 7'd0;
+                    remain_w = 2'd0;
+                    state_w = S_WAIT_INSERT;
+                end
+                else begin
+                    end_index_w = end_index_r;
+                    front_index_w = front_index_r + 1;
+                    remain_w = remain_r + 1;
+                    state_w = S_SET;
+                end
             end
         endcase
     end
@@ -201,6 +301,9 @@ module Deck(clk, reset, start, o_Deck, in_use, insert, insert_card, done);
             counter_r <= 7'b0;
             end_index_r <= 7'd'107;
             lfsr_r <= 7'b0;
+            front_index_r <= 7'b0;
+            empty_r <= 1'b0;
+            remain_r <= 2'd0;
         end
         else begin
             state_r <= state_w;
@@ -210,6 +313,9 @@ module Deck(clk, reset, start, o_Deck, in_use, insert, insert_card, done);
             counter_r <= counter_w;
             end_index_r <= end_index_w;
             lfsr_r <= lfsr_w;
+            front_index_r <= front_index_w;
+            empty_r <= empty_w;
+            remain_r <= remain_w;
         end
     end
 endmodule
