@@ -3,7 +3,6 @@
 // 0: red, 1: yellow, 2: green, 3: blue
 // 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9
 // 10: skip, 11: reverse, 12: draw two, 13: wild, 14: wild draw four
-// TODO: when the deck is empty, shuffle will not work.
 module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_drawn, o_card); 
     //----------------- port definition -----------------//
     input        i_clk, i_rst_n, i_start, i_insert;
@@ -203,13 +202,19 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
                 end
             end
             S_INSERT_1: begin
-                if(lfsr_r[6:0] > end_index_1_r) begin
-                    state_1_w = S_INSERT_1; // if rand_num > end_index , insert again
+                if(end_index_1_r < 20) begin
+                    Deck_1_w[end_index_1_r] = i_prev_card;
+                    state_1_w = S_IDLE_1; // if the last card is inserted, keep the index value
                 end
                 else begin
-                    Deck_1_w[end_index_1_r] = Deck_1_r[lfsr_r[6:0]];
-                    Deck_1_w[lfsr_r[6:0]] = i_prev_card; // Do the shuffle thing
-                    state_1_w = S_IDLE_1;
+                    if(lfsr_r[6:0] > end_index_1_r) begin
+                        state_1_w = S_INSERT_1; // if rand_num > end_index , insert again
+                    end
+                    else begin
+                        Deck_1_w[end_index_1_r] = Deck_1_r[lfsr_r[6:0]];
+                        Deck_1_w[lfsr_r[6:0]] = i_prev_card; // Do the shuffle thing
+                        state_1_w = S_IDLE_1;
+                    end
                 end
                 end_index_1_w = (end_index_2_r == 0) ? end_index_1_r : end_index_1_r + 1; // if the last card is inserted, keep the index value
             end
@@ -253,13 +258,19 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
                 end
             end
             S_INSERT_2: begin
-                if(lfsr_r[6:0] > end_index_2_r) begin
-                    state_2_w = S_INSERT_2; // if rand_num > end_index , insert again
+                if(end_index_2_r < 20) begin
+                    Deck_2_w[end_index_2_r] = i_prev_card;
+                    state_2_w = S_IDLE_2; // if the last card is inserted, keep the index value
                 end
                 else begin
-                    Deck_2_w[end_index_2_r] = Deck_2_r[lfsr_r[6:0]];
-                    Deck_2_w[lfsr_r[6:0]] = i_prev_card; // Do the shuffle thing
-                    state_2_w = S_IDLE_2;
+                    if(lfsr_r[6:0] > end_index_2_r) begin
+                        state_2_w = S_INSERT_2; // if rand_num > end_index , insert again
+                    end
+                    else begin
+                        Deck_2_w[end_index_2_r] = Deck_2_r[lfsr_r[6:0]];
+                        Deck_2_w[lfsr_r[6:0]] = i_prev_card; // Do the shuffle thing
+                        state_2_w = S_IDLE_2;
+                    end
                 end
                 end_index_2_w = (end_index_1_r == 0) ? end_index_2_r : end_index_2_r + 1; // if the last card is inserted, keep the index value
             end
