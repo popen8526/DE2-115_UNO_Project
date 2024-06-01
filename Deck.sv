@@ -302,18 +302,18 @@ module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card);
     //----------------- sequential part for Deck_1-----------------//
     always_ff @(posedge i_clk or negedge i_rst_n) begin
         if (~i_rst_n) begin
-            state_1_r <= '0;
-            state_2_r <= '0;
+            state_1_r <= 3'b100;
+            state_2_r <= 3'b000;
             for (int i = 0; i < 108; i++) begin
-                Deck_1_r[i] <= '0;
-                Deck_2_r[i] <= '0;
+                Deck_1_r[i] <= 0;
+                Deck_2_r[i] <= 0;
             end
-            counter_r <= '0;
-            lfsr_r <= '0;
-            end_index_1_r <= '0;
-            end_index_2_r <= '0;
-            draw_r <= '0;
-            in_use_r <= '0;
+            counter_r <= 0;
+            lfsr_r <= 0;
+            end_index_1_r <= 0;
+            end_index_2_r <= 0;
+            draw_r <= 0;
+            in_use_r <= 0;
         end
         else begin
             state_1_r <= state_1_w;
