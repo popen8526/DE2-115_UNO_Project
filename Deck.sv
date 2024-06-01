@@ -12,8 +12,8 @@ module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card);
     output       o_done, o_drawn;
     output [5:0] o_card;
     //----------------- fsm state definition -----------------//
-    localparam  S_IDLE_1 = 3'b000, S_SHUFFLE_1 = 3'b001, S_WAIT_INSERT_1 = 3'b010, S_INSERT_1 = 3'b011, S_INIT_1 = 3'b100, S_WAIT_DRAW_1 = 3'b101, S_DRAW_1 = 3'b110;
-    localparam  S_IDLE_2 = 3'b000, S_SHUFFLE_2 = 3'b001, S_WAIT_INSERT_2 = 3'b010, S_INSERT_2 = 3'b011, S_WAIT_DRAW_2 = 3'b100, S_DRAW_2 = 3'b101;
+    localparam  S_IDLE_1 = 3'b000, S_SHUFFLE_1 = 3'b001, S_WAIT_INSERT_1 = 3'b010, S_INSERT_1 = 3'b011, S_INIT_1 = 3'b100, S_WAIT_DRAW_1 = 3'b101, S_DRAW_1 = 3'b110, S_SYNC_1 = 3'b111;
+    localparam  S_IDLE_2 = 3'b000, S_SHUFFLE_2 = 3'b001, S_WAIT_INSERT_2 = 3'b010, S_INSERT_2 = 3'b011, S_WAIT_DRAW_2 = 3'b100, S_DRAW_2 = 3'b101, S_SYNC_2 = 3'b110;
     //----------------- wire connection -----------------//
     logic        draw;
     //----------------- sequential signal definition -----------------//
@@ -222,7 +222,7 @@ module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card);
             end
             S_DRAW_1: begin
                 o_done_1 = 1'b0;
-                drawn_1 = 1'b1; // raise to 1 when the card is drawn, allow o_card to output the card.
+                drawn_1 = (insert_2) ? 1'b1 : 1'b0; // raise to 1 when the card is drawn, allow o_card to output the card.
                 state_1_w = (draw && insert_2) ? S_WAIT_DRAW_1 : S_IDLE_1;
             end
             S_WAIT_DRAW_1: begin
@@ -245,6 +245,7 @@ module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card);
         state_2_w = state_2_r;
         end_index_2_w = end_index_2_r;
         drawn_2 = 1'b0;
+        o_done_2 = 1'b0;
         case(state_2_r) 
             S_IDLE_2: begin
                 o_done_2 = 1'b1;
@@ -278,7 +279,7 @@ module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card);
                 end_index_2_w = (end_index_1_r == 0) ? end_index_2_r : end_index_2_r + 1; // if the last card is inserted, keep the index value
             end
             S_DRAW_2: begin
-                drawn_2 = 1'b1;
+                drawn_2 = (insert_1) ? 1'b1 :1'b0;
                 state_2_w = (draw && insert_1) ? S_WAIT_DRAW_2 : S_IDLE_2;
             end
             S_WAIT_DRAW_2: begin
@@ -289,7 +290,7 @@ module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card);
                 end
                 else begin
                     end_index_2_w = end_index_2_r - 1;
-                    in_use_w = 1'b1;
+                    in_use_w = 1'b0;
                     state_2_w = S_DRAW_2;
                 end
             end
