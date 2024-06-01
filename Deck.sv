@@ -227,7 +227,7 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
                 if(end_index_1_r == 0) begin
                     end_index_1_w = 0; // Draw the last card, hold the index value for the insertion.
                     in_use_w = 1'b0;      // The deck is not in use, change the deck to Deck_2 
-                    state_1_w = S_IDLE_1;
+                    state_1_w = (state_2_r == S_IDLE_2) ? S_IDLE_1 : S_WAIT_DRAW_1;
                 end
                 else begin
                     end_index_1_w = end_index_1_r - 1;
@@ -279,7 +279,7 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
                 if(end_index_2_r == 0) begin
                     end_index_2_w = end_index_2_r;
                     in_use_w = 1'b1; // change the deck to Deck_1
-                    state_2_w = S_IDLE_2;
+                    state_2_w = (state_1_r == S_IDLE_1) ? S_IDLE_2 : S_WAIT_DRAW_2;
                 end
                 else begin
                     end_index_2_w = end_index_2_r - 1;
