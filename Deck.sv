@@ -12,8 +12,8 @@ module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card);
     output       o_done, o_drawn;
     output [5:0] o_card;
     //----------------- fsm state definition -----------------//
-    localparam  S_IDLE_1 = 3'b000, S_SHUFFLE_1 = 3'b001, S_WAIT_INSERT_1 = 3'b010, S_INSERT_1 = 3'b011, S_INIT_1 = 3'b100, S_WAIT_DRAW_1 = 3'b101, S_DRAW_1 = 3'b110, S_SYNC_1 = 3'b111;
-    localparam  S_IDLE_2 = 3'b000, S_SHUFFLE_2 = 3'b001, S_WAIT_INSERT_2 = 3'b010, S_INSERT_2 = 3'b011, S_WAIT_DRAW_2 = 3'b100, S_DRAW_2 = 3'b101, S_SYNC_2 = 3'b110;
+    localparam  S_IDLE_1 = 3'b000, S_SHUFFLE_1 = 3'b001, S_WAIT_INSERT_1 = 3'b010, S_INSERT_1 = 3'b011, S_INIT_1 = 3'b100, S_WAIT_DRAW_1 = 3'b101, S_DRAW_1 = 3'b110;
+    localparam  S_IDLE_2 = 3'b000, S_SHUFFLE_2 = 3'b001, S_WAIT_INSERT_2 = 3'b010, S_INSERT_2 = 3'b011, S_WAIT_DRAW_2 = 3'b100, S_DRAW_2 = 3'b101;
     //----------------- wire connection -----------------//
     logic        draw;
     //----------------- sequential signal definition -----------------//
@@ -41,6 +41,9 @@ module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card);
     always_comb begin
         if(state_1_r == S_WAIT_DRAW_1 || state_2_r == S_WAIT_DRAW_2) begin
             draw_w = draw_r - 1; // draw_w is the number of cards to draw
+        end
+        else if(state_1_r == S_IDLE_1 || state_2_r == S_IDLE_2) begin
+            draw_w = i_draw;
         end
         else begin
             draw_w = draw_r;
