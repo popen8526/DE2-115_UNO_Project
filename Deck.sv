@@ -28,7 +28,6 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
     logic [2:0] state_2_w, state_2_r;
     logic [6:0] end_index_1_w, end_index_1_r, end_index_2_w, end_index_2_r;
     logic [2:0] draw_w, draw_r;
-    logic       o_done_1, o_done_2;
     logic       in_use_w, in_use_r;
     logic       drawn_1, drawn_2;
     //----------------- wire connection -----------------//
@@ -59,7 +58,6 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
         drawn_1 = 1'b0;
         case(state_1_r)
             S_INIT_1: begin
-                o_done_1 = 1'b0;
                 state_1_w = S_IDLE_1;
                 Deck_1_w[0] = {2'b00, 4'b0000}; // red 0
                 Deck_1_w[1] = {2'b00, 4'b0001}; // red 1
@@ -174,7 +172,6 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
                 Deck_1_w[107] = {2'b11, 4'b1110}; // blue wild draw four
             end
             S_IDLE_1: begin
-                o_done_1 = 1'b1;
                 counter_w = counter_r + 1; // i_start counting
                 if (i_start) begin
                     state_1_w = S_SHUFFLE_1;
@@ -195,7 +192,6 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
                 end
             end
             S_SHUFFLE_1: begin
-                o_done_1 = 1'b0;
                 if(lfsr_r[6:0] > end_index_1_r) begin
                     state_1_w = S_SHUFFLE_1;// if rand_num > end_index , shuffle again
                 end
@@ -218,12 +214,10 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
                 end_index_1_w = (end_index_2_r == 0) ? end_index_1_r : end_index_1_r + 1; // if the last card is inserted, keep the index value
             end
             S_DRAW_1: begin
-                o_done_1 = 1'b0;
                 drawn_1 = 1'b1;
                 state_1_w = (draw) ? S_WAIT_DRAW_1 : S_IDLE_1;
             end
             S_WAIT_DRAW_1: begin
-                o_done_1 = 1'b0; 
                 if(end_index_1_r == 0) begin
                     end_index_1_w = 0; // Draw the last card, hold the index value for the insertion.
                     in_use_w = 1'b0;      // The deck is not in use, change the deck to Deck_2 
@@ -242,10 +236,8 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
         state_2_w = state_2_r;
         end_index_2_w = end_index_2_r;
         drawn_2 = 1'b0;
-        o_done_2 = 1'b0;
         case(state_2_r) 
             S_IDLE_2: begin
-                o_done_2 = 1'b1;
                 if (in_use_r) begin // in_use_r is high, the deck_2 is not in use
                     for (int i = 0; i < 108; i++) begin
                         Deck_2_w[i] = 0;
