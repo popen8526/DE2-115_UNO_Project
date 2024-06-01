@@ -4,13 +4,14 @@
 // 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9
 // 10: skip, 11: reverse, 12: draw two, 13: wild, 14: wild draw four
 // TODO: when the deck is empty, shuffle will not work.
-module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card); 
+module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_drawn, o_card); 
     //----------------- port definition -----------------//
-    input        i_clk, i_rst_n, i_start;
+    input        i_clk, i_rst_n, i_start, i_insert;
     // output [5:0] o_Deck [107:0]; // No need to output the whole deck
     input  [2:0] i_draw; // 100: draw four, 010 draw two, 001: draw one
     output       o_done, o_drawn;
     output [5:0] o_card;
+    input  [5:0] i_prev_card;
     //----------------- fsm state definition -----------------//
     localparam  S_IDLE_1 = 3'b000, S_SHUFFLE_1 = 3'b001, S_WAIT_INSERT_1 = 3'b010, S_INSERT_1 = 3'b011, S_INIT_1 = 3'b100, S_WAIT_DRAW_1 = 3'b101, S_DRAW_1 = 3'b110;
     localparam  S_IDLE_2 = 3'b000, S_SHUFFLE_2 = 3'b001, S_WAIT_INSERT_2 = 3'b010, S_INSERT_2 = 3'b011, S_WAIT_DRAW_2 = 3'b100, S_DRAW_2 = 3'b101;
@@ -209,7 +210,7 @@ module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card);
             end
             S_WAIT_INSERT_1: begin
                 o_done_1 = 1'b0;
-                if(drawn_2) state_1_w = S_INSERT_1; // if the card is drawn in deck_2, insert the card (state_2_w = S_DRAW_2)
+                if(i_insert) state_1_w = S_INSERT_1; // if the card is drawn in deck_2, insert the card (state_2_w = S_DRAW_2)
                 else state_1_w = S_IDLE_1;
             end
             S_INSERT_1: begin
@@ -218,15 +219,21 @@ module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card);
                 end
                 else begin
                     Deck_1_w[end_index_1_r] = Deck_1_r[lfsr_r[6:0]];
-                    Deck_1_w[lfsr_r[6:0]] = Deck_2_r[end_index_2_r]; // Do the shuffle thing
+                    Deck_1_w[lfsr_r[6:0]] = i_prev_card; // Do the shuffle thing
                     state_1_w = draw ? S_WAIT_INSERT_1 : S_IDLE_1;
                 end
                 end_index_1_w = (end_index_2_r == 0) ? end_index_1_r : end_index_1_r + 1; // if the last card is inserted, keep the index value
             end
             S_DRAW_1: begin
                 o_done_1 = 1'b0;
-                drawn_1 = (insert_2) ? 1'b1 : 1'b0; // raise to 1 when the card is drawn, allow o_card to output the card.
-                state_1_w = (draw && insert_2) ? S_WAIT_DRAW_1 : S_IDLE_1;
+                if(insert_2) begin
+                    drawn_1 =  1'b1;
+                    state_1_w = (draw) ? S_WAIT_DRAW_1 : S_IDLE_1;
+                end
+                else begin
+                    drawn_1 = 1'b0;
+                    state_1_w = S_DRAW_1;
+                end
             end
             S_WAIT_DRAW_1: begin
                 o_done_1 = 1'b0; 
@@ -282,8 +289,14 @@ module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card);
                 end_index_2_w = (end_index_1_r == 0) ? end_index_2_r : end_index_2_r + 1; // if the last card is inserted, keep the index value
             end
             S_DRAW_2: begin
-                drawn_2 = (insert_1) ? 1'b1 :1'b0;
-                state_2_w = (draw && insert_1) ? S_WAIT_DRAW_2 : S_IDLE_2;
+                if(insert_1) begin
+                    drawn_2 =  1'b1;
+                    state_2_w = (draw) ? S_WAIT_DRAW_2 : S_IDLE_2;
+                end
+                else begin
+                    drawn_2 = 1'b0;
+                    state_2_w = S_DRAW_2;
+                end
             end
             S_WAIT_DRAW_2: begin
                 if(end_index_2_r == 0) begin
