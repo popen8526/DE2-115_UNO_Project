@@ -35,6 +35,15 @@ module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card);
     assign draw = (i_draw[0] || i_draw[1] || i_draw[2]);
     assign o_drawn = in_use_r ? drawn_1 : drawn_2;
     assign o_card = in_use_r ? Deck_1_r[end_index_1_r] : Deck_2_r[end_index_2_r]; // always output the last card in the deck, when o_drawn is high, the last card is drawn.
+    //----------------- combinational part for draw -----------------//
+    always_comb begin
+        if(state_1_r == S_WAIT_DRAW_1 || state_2_r == S_WAIT_DRAW_2) begin
+            draw_w = draw_r - 1; // draw_w is the number of cards to draw
+        end
+        else begin
+            draw_w = draw_r;
+        end
+    end
     //----------------- combinational part for Deck_1-----------------//
     always_comb begin : 
         counter_w = counter_r;
@@ -208,18 +217,17 @@ module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card);
                 else begin
                     Deck_1_w[end_index_1_r] = Deck_1_r[lfsr_r[6:0]];
                     Deck_1_w[lfsr_r[6:0]] = Deck_2_r[end_index_2_r]; // Do the shuffle thing
-                    state_1_w = draw ? S_INSERT_1 : S_IDLE_1;
+                    state_1_w = draw ? S_WAIT_INSERT_1 : S_IDLE_1;
                 end
                 end_index_1_w = (end_index_2_r == 0) ? end_index_1_r : end_index_1_r + 1; // if the last card is inserted, keep the index value
             end
             S_DRAW_1: begin
                 o_done_1 = 1'b0;
                 drawn_1 = 1'b1; // raise to 1 when the card is drawn, allow o_card to output the card.
-                state_1_w = (draw) ? S_DRAW_1 : S_IDLE_1;
+                state_1_w = (draw) ? S_WAIT_DRAW_1 : S_IDLE_1;
             end
             S_WAIT_DRAW_1: begin
                 o_done_1 = 1'b0; 
-                draw_w = draw_r - 1; // draw one card
                 if(end_index_1_r == 0) begin
                     end_index_1_w = 0; // Draw the last card, hold the index value for the insertion.
                     in_use_w = 1'b0;      // The deck is not in use, change the deck to Deck_2 
@@ -266,16 +274,15 @@ module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card);
                 else begin
                     Deck_2_w[end_index_2_r] = Deck_2_r[lfsr_r[6:0]];
                     Deck_2_w[lfsr_r[6:0]] = Deck_1_r[end_index_1_r]; // Do the shuffle thing
-                    state_2_w = draw ? S_INSERT_2 : S_IDLE_2;
+                    state_2_w = draw ? S_WAIT_INSERT_2 : S_IDLE_2;
                 end
                 end_index_2_w = (end_index_1_r == 0) ? end_index_2_r : end_index_2_r + 1; // if the last card is inserted, keep the index value
             end
             S_DRAW_2: begin
                 drawn_2 = 1'b1;
-                state_2_w = (draw) ? S_DRAW_2 : S_IDLE_2;
+                state_2_w = (draw) ? S_WAIT_DRAW_2 : S_IDLE_2;
             end
             S_WAIT_DRAW_2: begin
-                draw_w = draw_r - 1;
                 if(end_index_2_r == 0) begin
                     end_index_2_w = end_index_2_r;
                     in_use_w = 1'b1; // change the deck to Deck_1
