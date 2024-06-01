@@ -223,7 +223,7 @@ module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card);
             S_DRAW_1: begin
                 o_done_1 = 1'b0;
                 drawn_1 = 1'b1; // raise to 1 when the card is drawn, allow o_card to output the card.
-                state_1_w = (draw) ? S_WAIT_DRAW_1 : S_IDLE_1;
+                state_1_w = (draw && insert_2) ? S_WAIT_DRAW_1 : S_IDLE_1;
             end
             S_WAIT_DRAW_1: begin
                 o_done_1 = 1'b0; 
@@ -279,7 +279,7 @@ module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card);
             end
             S_DRAW_2: begin
                 drawn_2 = 1'b1;
-                state_2_w = (draw) ? S_WAIT_DRAW_2 : S_IDLE_2;
+                state_2_w = (draw && insert_1) ? S_WAIT_DRAW_2 : S_IDLE_2;
             end
             S_WAIT_DRAW_2: begin
                 if(end_index_2_r == 0) begin
