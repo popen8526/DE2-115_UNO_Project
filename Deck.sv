@@ -303,7 +303,7 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
             end_index_1_r <= 0;
             end_index_2_r <= 0;
             draw_r <= 0;
-            in_use_r <= 0;
+            in_use_r <= 1;
         end
         else begin
             state_1_r <= state_1_w;
