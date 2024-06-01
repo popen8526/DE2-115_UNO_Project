@@ -3,7 +3,7 @@
 // 0: red, 1: yellow, 2: green, 3: blue
 // 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9
 // 10: skip, 11: reverse, 12: draw two, 13: wild, 14: wild draw four
-
+// TODO: when the deck is empty, shuffle will not work.
 module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card); 
     //----------------- port definition -----------------//
     input        i_clk, i_rst_n, i_start;
