@@ -32,12 +32,13 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
     logic       in_use_w, in_use_r;
     logic       drawn_1, drawn_2;
     //----------------- wire connection -----------------//
-    assign o_done = in_use_r ? o_done_1 : o_done_2;
+    assign o_done = (state_1_r == S_IDLE_1 && state_2_r == S_IDLE_2);
     assign draw = (i_draw[0] || i_draw[1] || i_draw[2]);
     assign o_drawn = in_use_r ? drawn_1 : drawn_2;
     assign o_card = in_use_r ? Deck_1_r[end_index_1_r] : Deck_2_r[end_index_2_r]; // always output the last card in the deck, when o_drawn is high, the last card is drawn.
     //----------------- combinational part for draw -----------------//
     always_comb begin
+        lfsr_w = {lfsr_r[3]^lfsr_r[0], lfsr_r[6], lfsr_r[5], lfsr_r[4], lfsr_r[3], lfsr_r[2], lfsr_r[1]};
         if(state_1_r == S_WAIT_DRAW_1 || state_2_r == S_WAIT_DRAW_2) begin
             draw_w = draw_r - 1; // draw_w is the number of cards to draw
         end
@@ -195,7 +196,6 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
             end
             S_SHUFFLE_1: begin
                 o_done_1 = 1'b0;
-                lfsr_w = {lfsr_r[3]^lfsr_r[0], lfsr_r[6], lfsr_r[5], lfsr_r[4], lfsr_r[3], lfsr_r[2], lfsr_r[1]};
                 if(lfsr_r[6:0] > end_index_1_r) begin
                     state_1_w = S_SHUFFLE_1;// if rand_num > end_index , shuffle again
                 end
