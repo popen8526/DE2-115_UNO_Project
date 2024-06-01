@@ -13,8 +13,8 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
     output [5:0] o_card;
     input  [5:0] i_prev_card;
     //----------------- fsm state definition -----------------//
-    localparam  S_IDLE_1 = 3'b000, S_SHUFFLE_1 = 3'b001, S_WAIT_INSERT_1 = 3'b010, S_INSERT_1 = 3'b011, S_INIT_1 = 3'b100, S_WAIT_DRAW_1 = 3'b101, S_DRAW_1 = 3'b110;
-    localparam  S_IDLE_2 = 3'b000, S_SHUFFLE_2 = 3'b001, S_WAIT_INSERT_2 = 3'b010, S_INSERT_2 = 3'b011, S_WAIT_DRAW_2 = 3'b100, S_DRAW_2 = 3'b101;
+    localparam  S_IDLE_1 = 3'b000, S_SHUFFLE_1 = 3'b001, S_INSERT_1 = 3'b011, S_INIT_1 = 3'b100, S_WAIT_DRAW_1 = 3'b101, S_DRAW_1 = 3'b110;
+    localparam  S_IDLE_2 = 3'b000, S_SHUFFLE_2 = 3'b001, S_INSERT_2 = 3'b011, S_WAIT_DRAW_2 = 3'b100, S_DRAW_2 = 3'b101;
     //----------------- wire connection -----------------//
     logic        draw;
     //----------------- sequential signal definition -----------------//
@@ -30,14 +30,12 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
     logic [2:0] draw_w, draw_r;
     logic       o_done_1, o_done_2;
     logic       in_use_w, in_use_r;
-    logic       drawn_1, drawn_2, insert_1, insert_2;
+    logic       drawn_1, drawn_2;
     //----------------- wire connection -----------------//
     assign o_done = in_use_r ? o_done_1 : o_done_2;
     assign draw = (i_draw[0] || i_draw[1] || i_draw[2]);
     assign o_drawn = in_use_r ? drawn_1 : drawn_2;
     assign o_card = in_use_r ? Deck_1_r[end_index_1_r] : Deck_2_r[end_index_2_r]; // always output the last card in the deck, when o_drawn is high, the last card is drawn.
-    assign insert_1 = (state_1_r == S_WAIT_INSERT_1) ? 1 : 0;
-    assign insert_2 = (state_2_r == S_WAIT_INSERT_2) ? 1 : 0;
     //----------------- combinational part for draw -----------------//
     always_comb begin
         if(state_1_r == S_WAIT_DRAW_1 || state_2_r == S_WAIT_DRAW_2) begin
@@ -186,7 +184,7 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
                         Deck_1_w[i] = 0;
                     end
                     end_index_1_w = 0;
-                    state_1_w = S_WAIT_INSERT_1;
+                    state_1_w = (i_insert) ? S_INSERT_1 : S_IDLE_1;
                 end
                 else if (draw) begin
                     state_1_w = S_DRAW_1;
@@ -208,11 +206,6 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
                     state_1_w = (end_index_1_r > 0) ? S_SHUFFLE_1 : S_IDLE_1;
                 end
             end
-            S_WAIT_INSERT_1: begin
-                o_done_1 = 1'b0;
-                if(i_insert) state_1_w = S_INSERT_1; // if the card is drawn in deck_2, insert the card (state_2_w = S_DRAW_2)
-                else state_1_w = S_IDLE_1;
-            end
             S_INSERT_1: begin
                 if(lfsr_r[6:0] > end_index_1_r) begin
                     state_1_w = S_INSERT_1; // if rand_num > end_index , insert again
@@ -220,20 +213,14 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
                 else begin
                     Deck_1_w[end_index_1_r] = Deck_1_r[lfsr_r[6:0]];
                     Deck_1_w[lfsr_r[6:0]] = i_prev_card; // Do the shuffle thing
-                    state_1_w = draw ? S_WAIT_INSERT_1 : S_IDLE_1;
+                    state_1_w = S_IDLE_1;
                 end
                 end_index_1_w = (end_index_2_r == 0) ? end_index_1_r : end_index_1_r + 1; // if the last card is inserted, keep the index value
             end
             S_DRAW_1: begin
                 o_done_1 = 1'b0;
-                if(insert_2) begin
-                    drawn_1 =  1'b1;
-                    state_1_w = (draw) ? S_WAIT_DRAW_1 : S_IDLE_1;
-                end
-                else begin
-                    drawn_1 = 1'b0;
-                    state_1_w = S_DRAW_1;
-                end
+                drawn_1 = 1'b1;
+                state_1_w = (draw) ? S_WAIT_DRAW_1 : S_IDLE_1;
             end
             S_WAIT_DRAW_1: begin
                 o_done_1 = 1'b0; 
@@ -264,7 +251,7 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
                         Deck_2_w[i] = 0;
                     end
                     end_index_2_w = 0;
-                    state_2_w = S_WAIT_INSERT_2;
+                    state_2_w = (i_insert) ? S_INSERT_2 : S_IDLE_2;
                 end
                 else if (draw) begin
                     state_2_w = S_DRAW_2;
@@ -273,30 +260,20 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
                     state_2_w = S_IDLE_2;
                 end
             end
-            S_WAIT_INSERT_2: begin
-                if(drawn_1) state_2_w = S_INSERT_2; // if the card is drawn in deck_1, insert the card (state_1_w = S_DRAW_1)
-                else state_2_w = S_IDLE_2;
-            end
             S_INSERT_2: begin
                 if(lfsr_r[6:0] > end_index_2_r) begin
                     state_2_w = S_INSERT_2; // if rand_num > end_index , insert again
                 end
                 else begin
                     Deck_2_w[end_index_2_r] = Deck_2_r[lfsr_r[6:0]];
-                    Deck_2_w[lfsr_r[6:0]] = Deck_1_r[end_index_1_r]; // Do the shuffle thing
-                    state_2_w = draw ? S_WAIT_INSERT_2 : S_IDLE_2;
+                    Deck_2_w[lfsr_r[6:0]] = i_prev_card; // Do the shuffle thing
+                    state_2_w = S_IDLE_2;
                 end
                 end_index_2_w = (end_index_1_r == 0) ? end_index_2_r : end_index_2_r + 1; // if the last card is inserted, keep the index value
             end
             S_DRAW_2: begin
-                if(insert_1) begin
-                    drawn_2 =  1'b1;
-                    state_2_w = (draw) ? S_WAIT_DRAW_2 : S_IDLE_2;
-                end
-                else begin
-                    drawn_2 = 1'b0;
-                    state_2_w = S_DRAW_2;
-                end
+                drawn_2 =  1'b1;
+                state_2_w = (draw) ? S_WAIT_DRAW_2 : S_IDLE_2;
             end
             S_WAIT_DRAW_2: begin
                 if(end_index_2_r == 0) begin
