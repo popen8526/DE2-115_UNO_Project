@@ -29,12 +29,14 @@ module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card);
     logic [2:0] draw_w, draw_r;
     logic       o_done_1, o_done_2;
     logic       in_use_w, in_use_r;
-    logic       drawn_1, drawn_2;
+    logic       drawn_1, drawn_2, insert_1, insert_2;
     //----------------- wire connection -----------------//
     assign o_done = in_use_r ? o_done_1 : o_done_2;
     assign draw = (i_draw[0] || i_draw[1] || i_draw[2]);
     assign o_drawn = in_use_r ? drawn_1 : drawn_2;
     assign o_card = in_use_r ? Deck_1_r[end_index_1_r] : Deck_2_r[end_index_2_r]; // always output the last card in the deck, when o_drawn is high, the last card is drawn.
+    assign insert_1 = (state_1_r == S_WAIT_INSERT_1) ? 1 : 0;
+    assign insert_2 = (state_2_r == S_WAIT_INSERT_2) ? 1 : 0;
     //----------------- combinational part for draw -----------------//
     always_comb begin
         if(state_1_r == S_WAIT_DRAW_1 || state_2_r == S_WAIT_DRAW_2) begin
@@ -204,9 +206,6 @@ module Deck(i_clk, i_rst_n, i_start, i_draw, o_done, o_drawn, o_card);
             end
             S_WAIT_INSERT_1: begin
                 o_done_1 = 1'b0;
-                if(i_insert) state_1_w = S_INSERT_1;
-                else state_1_w = in_use_r ? S_IDLE_1 : S_WAIT_INSERT_1;
-
                 if(drawn_2) state_1_w = S_INSERT_1; // if the card is drawn in deck_2, insert the card (state_2_w = S_DRAW_2)
                 else state_1_w = S_IDLE_1;
             end
