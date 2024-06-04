@@ -243,7 +243,7 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
         case(state_2_r) 
             S_IDLE_2: begin
                 if (in_use_r) begin // in_use_r is high, the deck_2 is not in use
-                    for (int i = 0; i < 108; i++) begin
+                    for (int i = end_index_2_r; i < 108; i++) begin
                         Deck_2_w[i] = 0;
                     end
                     end_index_2_w = 0;
