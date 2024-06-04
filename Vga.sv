@@ -20,7 +20,9 @@ module vga(
     logic [9:0] y_cnt_r, y_cnt_w;
     logic hsync_r, hsync_w, vsync_r, vsync_w;
     logic [7:0] vga_r_r, vga_g_r, vga_b_r, vga_r_w, vga_g_w, vga_b_w;
-
+    logic [239:0] r_element, g_element, b_element;
+    logic [9:0] temp;
+    assign temp = (x_cnt_r - 224) << 3;
 //  640*480, refresh rate 60Hz
     // VGA clock rate 25.175MHz
     localparam H_FRONT  =   16;
@@ -46,7 +48,7 @@ module vga(
     assign VGA_SYNC_N   =   1'b0;
     assign VGA_BLANK_N  =   ~((x_cnt_r < H_BLANK) || (y_cnt_r < V_BLANK));
     
-    parameter [0:50][240:0] picture = {
+    parameter [0:149][239:0] picture = {
     240'b111111101111111011111011101100001000000101100110010100000101001001010010010100100101001001010010010100100101001001010010010100100101001001010010010100100101001001010010010100100101001001010010010100100111001010110100111110101111110111111110,
     240'b111111101111111011111011101100001000001001100110010100000101001001010010010100100101001001010010010100100101001001010010010100100101001001010010010100100101001001010010010100100101001001010010010100100111001110110100111110101111110111111110,
     240'b111111101111111011111011101100111000010101101000010100000101001001010010010100100101001001010010010100100101001001010010010100100101001001010010010100100101001001010010010100100101001001010010010100100111010010110101111110101111110111111110,
@@ -248,55 +250,23 @@ module vga(
     
 //  RGB data
     always_comb begin
-        if(x_cnt_r < 30 && y_cnt_r < 50) begin
-            vga_r_w = picture[0 + y_cnt_r][x_cnt_r * 8 : x_cnt_r * 8 + 7];
-            vga_g_w = picture[50 + y_cnt_r][x_cnt_r * 8 : x_cnt_r * 8 + 7];
-            vga_b_w = picture[150 + y_cnt_r][x_cnt_r * 8 : x_cnt_r * 8 + 7];
-        end
-        else if (0 <= x_cnt_r && x_cnt_r <= 143) begin
-            vga_r_w = 8'b00000000;
-            vga_g_w = 8'b00000000;
-            vga_b_w = 8'b00000000;
-        end
-        else if (144 <= x_cnt_r && x_cnt_r <= 223) begin
-            vga_r_w = 8'b11111111;
-            vga_g_w = 8'b00000000;
-            vga_b_w = 8'b00000000;
-        end
-        else if (224 <= x_cnt_r && x_cnt_r <= 303) begin
-            vga_r_w = 8'b11111111;
-            vga_g_w = 8'b11111111;
-            vga_b_w = 8'b00000000;
-        end
-        else if (304 <= x_cnt_r && x_cnt_r <= 383) begin
-            vga_r_w = 8'b00000000;
-            vga_g_w = 8'b11111111;
-            vga_b_w = 8'b00000000;
-        end
-        else if (384 <= x_cnt_r && x_cnt_r <= 463) begin
-            vga_r_w = 8'b00000000;
-            vga_g_w = 8'b11111111;
-            vga_b_w = 8'b11111111;
-        end
-        else if (464 <= x_cnt_r && x_cnt_r <= 543) begin
-            vga_r_w = 8'b11111111;
-            vga_g_w = 8'b00000000;
-            vga_b_w = 8'b11111111;
-        end
-        else if (544 <= x_cnt_r && x_cnt_r <= 623) begin
-            vga_r_w = 8'b00000000;
-            vga_g_w = 8'b00000000;
-            vga_b_w = 8'b11111111;
-        end
-        else if (624 <= x_cnt_r && x_cnt_r <= 703) begin
-            vga_r_w = 8'b00000000;
-            vga_g_w = 8'b00000000;
-            vga_b_w = 8'b00000000;
-        end
-        else if (704 <= x_cnt_r && x_cnt_r <= 783) begin
-            vga_r_w = 8'b11111111;
-            vga_g_w = 8'b11111111;
-            vga_b_w = 8'b11111111;
+        // if((0 <= x_cnt_r && x_cnt_r <= 30) && (0 <= y_cnt_r && y_cnt_r <= 50)) begin
+        // if((0 <= x_cnt_r && x_cnt_r <= 143) && (0 <= y_cnt_r && y_cnt_r <= 286)) begin
+        //     vga_r_w = 8'b00000000;
+        //     vga_g_w = 8'b00000000;
+        //     vga_b_w = 8'b00000000;
+        //     // vga_r_w = r_element[x_cnt_r<<3 +: 8];
+        //     // vga_g_w = g_element[x_cnt_r<<3 +: 8];
+        //     // vga_b_w = b_element[x_cnt_r<<3 +: 8];
+        // end
+        // // else 
+        if (224 <= x_cnt_r && x_cnt_r <= 253) begin
+            // vga_r_w = 8'b11111111;
+            // vga_g_w = 8'b11111111;
+            // vga_b_w = 8'b00000000;
+            vga_r_w = r_element[temp +: 8];
+            vga_g_w = g_element[temp +: 8];
+            vga_b_w = b_element[temp +: 8];
         end
         else begin
             vga_r_w = 8'b11111111;
@@ -315,6 +285,9 @@ module vga(
             vga_r_r <= 8'b00000000;
             vga_g_r <= 8'b00000000;
             vga_b_r <= 8'b00000000;
+            r_element <= 240'b0;
+            g_element <= 240'b0;
+            b_element <= 240'b0;
         end
         else begin
             x_cnt_r <= x_cnt_w;
@@ -324,6 +297,9 @@ module vga(
             vga_r_r <= vga_r_w;
             vga_g_r <= vga_g_w;
             vga_b_r <= vga_b_w;
+            r_element <= picture[0 + y_cnt_w];
+            g_element <= picture[50 + y_cnt_w];
+            b_element <= picture[150 + y_cnt_w];
         end
     end
 endmodule
