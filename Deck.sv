@@ -61,7 +61,6 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
         counter_w = counter_r;
         state_1_w = state_1_r;
         end_index_1_w = end_index_1_r;
-        in_use_w = in_use_r;
         drawn_1 = 1'b0;
         case(state_1_r)
             S_INIT_1: begin
