@@ -36,6 +36,14 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
     assign o_card = in_use_r ? Deck_1_r[end_index_1_r] : Deck_2_r[end_index_2_r]; // always output the last card in the deck, when o_drawn is high, the last card is drawn.
     //----------------- combinational part for draw -----------------//
     always_comb begin
+        if(state_1_r == S_WAIT_DRAW_1 && end_index_1_r == 0) begin
+            in_use_w = 1'b0;
+        end
+        else if(state_2_r == S_WAIT_DRAW_2 && end_index_2_r == 0) begin
+            in_use_w = 1'b1;
+        end
+        else in_use_w = in_use_r;
+
         if(i_start) lfsr_w = counter_r;
         else lfsr_w = {lfsr_r[3]^lfsr_r[0], lfsr_r[6], lfsr_r[5], lfsr_r[4], lfsr_r[3], lfsr_r[2], lfsr_r[1]};
         if(state_1_r == S_WAIT_DRAW_1 || state_2_r == S_WAIT_DRAW_2) begin
