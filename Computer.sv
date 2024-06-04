@@ -23,7 +23,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
     logic [5:0] wildf_hands_r [19:0];
 
     logic draw_card_w, draw_card_r;
-    logic [5:0] drawed_card_w, drawed_card_r;
+    // logic [5:0] drawed_card_w, drawed_card_r;
     logic [6:0] red_num_w, red_num_r, blue_num_w, blue_num_r, green_num_w, green_num_r, yellow_num_w, yellow_num_r;
     logic [2:0] state_w, state_r;
     logic [5:0] red_exist, blue_exist, green_exist, yellow_exist, wild_exist;
@@ -39,17 +39,17 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
     assign blue_exist = (blue_num_r[0] || blue_num_r[1] || blue_num_r[2] || blue_num_r[3] || blue_num_r[4] || blue_num_r[5]);
     assign green_exist = (green_num_r[0] || green_num_r[1] || green_num_r[2] || green_num_r[3] || green_num_r[4] || green_num_r[5]);
     assign yellow_exist = (yellow_num_r[0] || yellow_num_r[1] || yellow_num_r[2] || yellow_num_r[3] || yellow_num_r[4] || yellow_num_r[5]);
-    assign wild_exist = (number_exist_r[13][0] || number_exist_r[13][1] || number_exist_r[13][2] || number_exist_r[13][3] || number_exist_r[14][0] || number_exist_r[14][2] || number_exist_r[14][3]);
+    assign wild_exist = (number_exist_r[13][0] || number_exist_r[13][1] || number_exist_r[13][2] || number_exist_r[13][3] || number_exist_r[14][0] || number_exist_r[14][1] || number_exist_r[14][2] || number_exist_r[14][3]);
     assign o_out_card = out_card_r;
     assign o_draw_card = draw_card_r;
     //----------------- combinational part -----------------//
     always_comb begin
-        if(o_draw_card) begin
-            drawed_card_w = i_drawed_card;
-        end
-        else begin
-            drawed_card_w = drawed_card_r;
-        end
+        // if(o_draw_card) begin
+        //     drawed_card_w = i_drawed_card;
+        // end
+        // else begin
+        //     drawed_card_w = drawed_card_r;
+        // end
         red_hands_w = red_hands_r;
         blue_hands_w = blue_hands_r;
         green_hands_w = green_hands_r;
@@ -69,7 +69,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                         red_iter_w = 7'd2;
                     end
                     else if(i_draw_four) begin
-                        state_w = S_DRAW4;
+                        state_w = S_DRAW;
                         red_iter_w = 7'd4;
                     end
                     else begin
@@ -92,7 +92,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                         red_iter_w = 7'd0;
                     end
                     else begin
-                        state_w = S_INIT;
+                        state_w = S_DRAW;
                         red_iter_w = red_iter_r - 1;
                     end
                     number_exist_w[i_drawed_card[3:0]] = number_exist_r[i_drawed_card[3:0]] + 1;
@@ -124,7 +124,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                     end
                 end
                 else begin
-                    state_w = S_INIT;
+                    state_w = S_DRAW;
                     red_iter_w = red_iter_r;
                 end
             end
@@ -587,7 +587,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                     draw_card_w = 1'b0;
                 end
             end
-            S_CHOOSE: begin // choose random color when played wild card
+            S_CHOOSE: begin // choose random color when played wild card (maybe if (color_exist != 0)&&(color != i_prev_card[5:4]) ?)
                 out_card_w = {lfsr_r[1], lfsr[0], out_card_r[3:0]};
                 state_w = S_OUT;
             end
@@ -610,7 +610,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
             green_num_r = 7'b0;
             yellow_num_r = 7'b0;
             draw_card_r = 1'b0;
-            drawed_card_r = 6'b0;
+            // drawed_card_r = 6'b0;
             out_card_r = 6'b0;
             lfsr_r = 4'b0110;
         end
@@ -629,7 +629,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
             green_num_r = green_num_w;
             yellow_num_r = yellow_num_w;
             draw_card_r = draw_card_w;
-            drawed_card_r = drawed_card_w;
+            // drawed_card_r = drawed_card_w;
             out_card_r = out_card_w;
             lfsr_r = lfsr_w;
         end
