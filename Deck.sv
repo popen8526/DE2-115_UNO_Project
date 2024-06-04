@@ -31,7 +31,7 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
     logic       drawn_1, drawn_2;
     //----------------- wire connection -----------------//
     assign o_done = (state_1_r == S_IDLE_1 && state_2_r == S_IDLE_2);
-    assign draw = (i_draw[0] || i_draw[1] || i_draw[2]);
+    assign draw = (draw_r[0] || draw_r[1] || draw_r[2]);
     assign o_drawn = in_use_r ? drawn_1 : drawn_2;
     assign o_card = in_use_r ? Deck_1_r[end_index_1_r] : Deck_2_r[end_index_2_r]; // always output the last card in the deck, when o_drawn is high, the last card is drawn.
     //----------------- combinational part for draw -----------------//
@@ -49,7 +49,7 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
         if(state_1_r == S_WAIT_DRAW_1 || state_2_r == S_WAIT_DRAW_2) begin
             draw_w = draw_r - 1; // draw_w is the number of cards to draw
         end
-        else if(state_1_r == S_IDLE_1 || state_2_r == S_IDLE_2) begin
+        else if(state_1_r == S_IDLE_1 && state_2_r == S_IDLE_2) begin
             draw_w = i_draw;
         end
         else begin
@@ -57,9 +57,9 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
         end
     end
     //----------------- combinational part for Deck_1-----------------//
-    always_comb begin : 
+    always_comb begin
         counter_w = counter_r;
-        state_1_w = state_1_r;
+        // state_1_w = state_1_r;
         end_index_1_w = end_index_1_r;
         drawn_1 = 1'b0;
         case(state_1_r)
@@ -183,13 +183,13 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
                     state_1_w = S_SHUFFLE_1;
                 end
                 else if (!in_use_r) begin // if the deck is not in use, i_rst_n the deck
-                    for (int i = 0; i < 108; i++) begin
+                    for (int i = end_index_1_r; i < 108; i++) begin
                         Deck_1_w[i] = 0;
                     end
-                    end_index_1_w = 0;
+                    end_index_1_w = end_index_1_r;
                     state_1_w = (i_insert) ? S_INSERT_1 : S_IDLE_1;
                 end
-                else if (draw) begin
+                else if (|i_draw) begin
                     state_1_w = S_DRAW_1;
                 end
                 else begin
@@ -198,34 +198,37 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
             end
             S_SHUFFLE_1: begin
                 if(lfsr_r[6:0] > end_index_1_r) begin
-                    state_1_w = S_SHUFFLE_1;// if rand_num > end_index , shuffle again
+                    state_1_w = (end_index_1_r == 0) ? S_IDLE_1 : S_SHUFFLE_1;// if rand_num > end_index , shuffle again
+                    end_index_1_w = (end_index_1_r == 0) ? 7'd107 : (end_index_1_r - 1);
                 end
                 else begin
                     Deck_1_w[end_index_1_r] = Deck_1_r[lfsr_r[6:0]];
                     Deck_1_w[lfsr_r[6:0]] = Deck_1_r[end_index_1_r];
-                    end_index_1_w = end_index_1_r - 1;
-                    state_1_w = (end_index_1_r > 0) ? S_SHUFFLE_1 : S_IDLE_1;
+                    end_index_1_w = (end_index_1_r > 1) ? (end_index_1_r - 1) : 7'd107;
+                    state_1_w = (end_index_1_r > 1) ? S_SHUFFLE_1 : S_IDLE_1;
                 end
             end
             S_INSERT_1: begin
                 if(end_index_1_r < 20) begin
                     Deck_1_w[end_index_1_r] = i_prev_card;
                     state_1_w = S_IDLE_1; // if the last card is inserted, keep the index value
+                    end_index_1_w = (end_index_2_r == 0) ? end_index_1_r : end_index_1_r + 1;
                 end
                 else begin
                     if(lfsr_r[6:0] > end_index_1_r) begin
                         state_1_w = S_INSERT_1; // if rand_num > end_index , insert again
+                        end_index_1_w = end_index_1_r;
                     end
                     else begin
                         Deck_1_w[end_index_1_r] = Deck_1_r[lfsr_r[6:0]];
                         Deck_1_w[lfsr_r[6:0]] = i_prev_card; // Do the shuffle thing
                         state_1_w = S_IDLE_1;
+                        end_index_1_w = (end_index_2_r == 0) ? end_index_1_r : end_index_1_r + 1;
                     end
                 end
-                end_index_1_w = (end_index_2_r == 0) ? end_index_1_r : end_index_1_r + 1; // if the last card is inserted, keep the index value
             end
             S_DRAW_1: begin
-                drawn_1 = 1'b1;
+                drawn_1 = (draw) ? 1'b1 : 1'b0;
                 state_1_w = (draw) ? S_WAIT_DRAW_1 : S_IDLE_1;
             end
             S_WAIT_DRAW_1: begin
@@ -251,10 +254,10 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
                     for (int i = end_index_2_r; i < 108; i++) begin
                         Deck_2_w[i] = 0;
                     end
-                    end_index_2_w = 0;
+                    end_index_2_w = end_index_2_r;
                     state_2_w = (i_insert) ? S_INSERT_2 : S_IDLE_2;
                 end
-                else if (draw) begin
+                else if (|i_draw) begin
                     state_2_w = S_DRAW_2;
                 end
                 else begin
@@ -265,21 +268,23 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
                 if(end_index_2_r < 20) begin
                     Deck_2_w[end_index_2_r] = i_prev_card;
                     state_2_w = S_IDLE_2; // if the last card is inserted, keep the index value
+                    end_index_2_w = (end_index_1_r == 0) ? end_index_2_r : end_index_2_r + 1;
                 end
                 else begin
                     if(lfsr_r[6:0] > end_index_2_r) begin
                         state_2_w = S_INSERT_2; // if rand_num > end_index , insert again
+                        end_index_2_w = end_index_2_r;
                     end
                     else begin
                         Deck_2_w[end_index_2_r] = Deck_2_r[lfsr_r[6:0]];
                         Deck_2_w[lfsr_r[6:0]] = i_prev_card; // Do the shuffle thing
                         state_2_w = S_IDLE_2;
+                        end_index_2_w = (end_index_1_r == 0) ? end_index_2_r : end_index_2_r + 1;
                     end
                 end
-                end_index_2_w = (end_index_1_r == 0) ? end_index_2_r : end_index_2_r + 1; // if the last card is inserted, keep the index value
             end
             S_DRAW_2: begin
-                drawn_2 =  1'b1;
+                drawn_2 = (draw) ? 1'b1 : 1'b0;
                 state_2_w = (draw) ? S_WAIT_DRAW_2 : S_IDLE_2;
             end
             S_WAIT_DRAW_2: begin
@@ -296,16 +301,16 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
     end
     //----------------- sequential part for Deck_1-----------------//
     always_ff @(posedge i_clk or negedge i_rst_n) begin
-        if (~i_rst_n) begin
-            state_1_r <= 3'b100;
-            state_2_r <= 3'b000;
+        if (!i_rst_n) begin
+            state_1_r <= S_INIT_1;
+            state_2_r <= S_IDLE_2;
             for (int i = 0; i < 108; i++) begin
                 Deck_1_r[i] <= 0;
                 Deck_2_r[i] <= 0;
             end
             counter_r <= 0;
             lfsr_r <= 0;
-            end_index_1_r <= 0;
+            end_index_1_r <= 7'd107;
             end_index_2_r <= 0;
             draw_r <= 0;
             in_use_r <= 1;
