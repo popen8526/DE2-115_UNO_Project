@@ -8,7 +8,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
     input [5:0] i_drawed_card; // the card that the player drawed
     //----------------- fsm state definition -----------------//
     localparam S_IDLE = 4'b000, S_DRAW = 4'b001, S_OUT = 4'b010, S_DRAW_BUFF = 4'b011, S_CHECK_COLOR = 4'b100, S_CHECK_NUM = 4'b101, S_INIT = 4'b110, S_CHOOSE = 4'b111;
-    localparam S_NOCARD = 4'b1000, S_CHECK = 4'b1001;
+    localparam S_NOCARD = 4'b1000, S_CHECK = 4'b1001, S_BUFFER = 4'b1010;
     //----------------- sequential signal definition -----------------//
     // first dimension : 0-red, 1-yellow, 2-green, 3-blue, 4-wild, 5-wild draw four
     // second dimension : card num/function
@@ -16,7 +16,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
     logic [1:0] hands_w [5:0][12:0];
     logic [1:0] hands_r [5:0][12:0];
 
-    logic draw_card;
+    logic       draw_card;
     logic [3:0] state_w, state_r;
     logic [5:0] red_exist, blue_exist, green_exist, yellow_exist, wild_exist, wild4_exist;
     logic       number_exist [12:0];
@@ -25,6 +25,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
     logic       out;
 
     logic [3:0] lfsr_w, lfsr_r;
+    logic [27:0] counter_w, counter_r;
     integer i, j, k, l;
     //----------------- wire connection -----------------//
     assign red_exist = (hands_r[0][0][0] || hands_r[0][1][0] || hands_r[0][2][0] || hands_r[0][3][0] || hands_r[0][4][0] || hands_r[0][5][0] || hands_r[0][6][0] || hands_r[0][7][0] || hands_r[0][8][0] || hands_r[0][9][0] || hands_r[0][10][0] || hands_r[0][11][0] || hands_r[0][12][0]);
@@ -55,6 +56,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
         lfsr_w = {lfsr_r[0]^lfsr_r[1], lfsr_r[3], lfsr_r[2], lfsr_r[1]};
         case(state_r)
             S_IDLE: begin
+                counter_w = 28'd0;
                 out = 1'b0;
                 draw_card = 1'b0;
                 if(i_start) begin // if it's the computer's turn
@@ -80,6 +82,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 end
             end
             S_DRAW: begin
+                counter_w = counter_r + 1;
                 out = 1'b0;
                 draw_card = 1'b0;
                 if(i_drawn) begin
@@ -113,18 +116,21 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 end
             end
             S_OUT: begin
-                out = 1'b1; // play the card
+                counter_w = counter_r + 1;
                 draw_card = 1'b0;
-                if(i_check) begin
+                if(i_check && counter_r[27]) begin
+                    out = 1'b1; // play the card
                     state_w = S_IDLE;
                     out_card_w = 6'd0;
                 end
                 else begin
+                    out = 1'b0; // play the card
                     state_w = S_OUT;
                     out_card_w = out_card_r;
                 end
             end
             S_CHECK_COLOR: begin
+                counter_w = counter_r + 1;
                 out = 1'b0;
                 iter_w = 3'd0;
                 draw_card = 1'b0;
@@ -224,6 +230,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 endcase
             end
             S_CHECK_NUM: begin
+                counter_w = counter_r + 1;
                 out = 1'b0;
                 draw_card = 1'b0;
                 if(i_prev_card[3:0] == 4'd13 || i_prev_card[3:0] == 4'd14) begin // prev card is wild - can only play wild if no color card
@@ -297,6 +304,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 end
             end
             S_CHOOSE: begin // choose random color when played wild card
+                counter_w = counter_r + 1;
                 out = 1'b0;
                 draw_card = 1'b0;
                 if(lfsr[1:0] != i_prev_card[5:4]) begin
@@ -349,26 +357,36 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 end
             end
             S_NOCARD: begin
+                counter_w = counter_r + 1;
                 out = 1'b0;
-                draw_card = 1'b1;
-                if(i_drawn) begin
-                    state_w = S_CHECK;
-                    if(i_drawed_card[3:0] == 4'b1101) begin // if the card is wild
-                        hands_w[4][0] = hands_r[4][0] + 1;
-                    end
-                    else if (i_drawed_card[3:0] == 4'b1110) begin // if the card is wild draw four
-                        hands_w[5][0] = hands_r[5][0] + 1;
+                if(counter_r[27]) begin
+                    draw_card = 1'b1;
+                    if(i_drawn) begin
+                        state_w = S_CHECK;
+                        if(i_drawed_card[3:0] == 4'b1101) begin // if the card is wild
+                            hands_w[4][0] = hands_r[4][0] + 1;
+                        end
+                        else if (i_drawed_card[3:0] == 4'b1110) begin // if the card is wild draw four
+                            hands_w[5][0] = hands_r[5][0] + 1;
+                        end
+                        else begin
+                            hands_w[i_drawed_card[5:4]][i_drawed_card[3:0]] = (hands_r[i_drawed_card[5:4]][i_drawed_card[3:0]][0]) ? 2'b11 : 2'b01;
+                        end
                     end
                     else begin
-                        hands_w[i_drawed_card[5:4]][i_drawed_card[3:0]] = (hands_r[i_drawed_card[5:4]][i_drawed_card[3:0]][0]) ? 2'b11 : 2'b01;
+                        state_w = S_NOCARD;
                     end
                 end
                 else begin
+                    draw_card = 1'b0;
                     state_w = S_NOCARD;
                 end
             end
             S_CHECK: begin
+                counter_w = counter_r + 1;
                 draw_card = 1'b0;
+                iter_w = 1'b0;
+                out = 1'b0;
                 state_w = (i_check) ? S_CHECK : S_IDLE;
             end
         endcase
@@ -385,6 +403,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
             iter_r <= 3'd0;
             out_card_r <= 6'd0;
             lfsr_r <= 4'b0110;
+            counter_r <= 28'd0;
         end
         else begin
             state_r <= state_w;
@@ -396,6 +415,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
             iter_r <= iter_w;
             out_card_r <= out_card_w;
             lfsr_r <= lfsr_w;
+            counter_r <= counter_w;
         end
     end
 endmodule
