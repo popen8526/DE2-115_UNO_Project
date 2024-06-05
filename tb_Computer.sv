@@ -1,4 +1,4 @@
-// run command : vcs -R -sverilog tb_Deck.sv Deck.sv -sverilog -v +access+all -full64 -debug_access
+// run command : vcs -R -sverilog tb_Computer.sv Computer.sv -sverilog -v +access+all -full64 -debug_access
 
 `timescale 1ns/100ps
 
