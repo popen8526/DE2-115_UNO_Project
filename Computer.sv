@@ -82,7 +82,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 end
             end
             S_DRAW: begin
-                counter_w = (counter_r == 28{1'b1}) counter_r : counter_r + 1;
+                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
                 draw_card = 1'b0;
                 if(i_drawn) begin
@@ -116,7 +116,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 end
             end
             S_OUT: begin
-                counter_w = (counter_r == 28{1'b1}) counter_r : counter_r + 1;
+                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
                 draw_card = 1'b0;
                 out = counter_r[27];
                 if(i_check) begin
@@ -131,7 +131,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 end
             end
             S_CHECK_COLOR: begin
-                counter_w = (counter_r == 28{1'b1}) counter_r : counter_r + 1;
+                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
                 iter_w = 3'd0;
                 draw_card = 1'b0;
@@ -231,7 +231,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 endcase
             end
             S_CHECK_NUM: begin
-                counter_w = (counter_r == 28{1'b1}) counter_r : counter_r + 1;
+                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
                 draw_card = 1'b0;
                 if(i_prev_card[3:0] == 4'd13 || i_prev_card[3:0] == 4'd14) begin // prev card is wild - can only play wild if no color card
@@ -305,7 +305,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 end
             end
             S_CHOOSE: begin // choose random color when played wild card
-                counter_w = (counter_r == 28{1'b1}) counter_r : counter_r + 1;
+                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
                 draw_card = 1'b0;
                 if(lfsr_r[1:0] != i_prev_card[5:4]) begin
@@ -358,7 +358,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 end
             end
             S_NOCARD: begin
-                counter_w = (counter_r == 28{1'b1}) counter_r : counter_r + 1;
+                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
                 if(counter_r[27]) begin
                     draw_card = 1'b1;
@@ -384,7 +384,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 end
             end
             S_CHECK: begin
-                counter_w = (counter_r == 28{1'b1}) counter_r : counter_r + 1;
+                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
                 draw_card = 1'b0;
                 iter_w = 1'b0;
                 out = 1'b0;
