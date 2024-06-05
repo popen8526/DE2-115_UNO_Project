@@ -10,7 +10,7 @@ module vga(
     output VGA_HS,
     output [7:0] VGA_R,
     output VGA_SYNC_N,
-    output VGA_VS
+    output VGA_VS,
     output [9:0] o_x_cnt,
     output [9:0] o_y_cnt
 );
