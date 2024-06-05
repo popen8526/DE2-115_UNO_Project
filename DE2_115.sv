@@ -144,7 +144,7 @@ audio audio_inst (
     .altpll_1_inclk_interface_clk(CLOCK_50),
     .altpll_1_inclk_interface_reset_reset(i_rst_n),
 );
-vga VGA_inst (
+Display display_instance (
     .i_rst_n(i_rst_n),
     .i_clk_25M(i_clk_25M),
     .VGA_B(VGA_B),

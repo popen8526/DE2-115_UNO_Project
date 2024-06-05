@@ -1,6 +1,6 @@
 module Display(
     input  i_rst_n,
-    input  i_clk_25M
+    input  i_clk_25M,
     output [7:0] VGA_B,
     output VGA_BLANK_N,
     output VGA_CLK,
@@ -17,7 +17,7 @@ module Display(
     vga vga_instance (
         .i_rst_n(i_rst_n),
         .i_clk_25M(i_clk_25M),
-        .in_pixel(in_pixel),
+        .in_pixel(pixel),
         .VGA_B(VGA_B),
         .VGA_BLANK_N(VGA_BLANK_N),
         .VGA_CLK(VGA_CLK),
@@ -37,5 +37,9 @@ module Display(
         .g_data(bg_g_pixel),
         .b_data(bg_b_pixel)
     );
+
+    assign pixel[0] = bg_r_pixel;
+    assign pixel[1] = bg_g_pixel;
+    assign pixel[2] = bg_b_pixel;
 
 endmodule
