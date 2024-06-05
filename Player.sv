@@ -1,411 +1,369 @@
-module Player(clk, reset, init, start, hands, prev_card, out_cards, draw_card, skip, draw_two, draw_four, drawed_card, out);
+module Player(i_clk, i_rst_n, i_init, i_start, i_prev_card, i_play, i_out_card, i_draw_card, i_draw_two, i_draw_four, i_drawn, i_check, i_drawed_card, o_out, o_full, o_hands);
     //----------------- port definition -----------------//
-    input clk, reset, init, start, skip, draw_two, draw_four;
-    input [5:0] hands [20:0];
-    input [5:0] prev_card;
-    output [5:0] out_cards; // output cards
-    output out; // decide whether to play a card
-    output draw_card; // decide whether to draw a card
-    input [5:0] drawed_card; // the card that the player drawed
+    input i_clk, i_rst_n, i_init, i_start, i_draw_two, i_draw_four, i_drawn, i_check;
+    input [5:0] i_prev_card;
+    input [5:0] i_out_card; // output cards
+    input       i_play; // player chooses a card
+    output [5:0] o_hands [19:0]; // the player's hand
+    output      o_out; // decide whether to play a card
+    input       i_draw_card; // player decides to draw card
+    input [5:0] i_drawed_card; // the card that the player drawed
+    output      o_full; // player has 20 cards
     //----------------- fsm state definition -----------------//
-    localparam [2:0] S_IDLE = 3'b000, S_DRAW = 3'b001, S_OUT = 3'b010, S_SKIP = 3'b011, S_CHECK_COLOR = 3'b100, S_CHECK_NUM = 3'b101, S_INIT = 3'b110, S_SEARCH_NUM = 3'b111;
+    localparam S_IDLE = 3'b000, S_DRAW = 3'b001, S_OUT = 3'b010, S_CHECK_COLOR = 3'b100, S_CHECK_NUM = 3'b101, S_INIT = 3'b110, S_SEARCH_NUM = 3'b111, S_DRAW_BUFF = 3'b011;
+    localparam S_HOLD = 1'b0, S_SORT = 1'b1;
     //----------------- sequential signal definition -----------------//
-    logic [5:0] red_hands_w [20:0];
-    logic [5:0] red_hands_r [20:0];
-    logic [5:0] blue_hands_w [20:0];
-    logic [5:0] blue_hands_r [20:0];
-    logic [5:0] green_hands_w [20:0];
-    logic [5:0] green_hands_r [20:0];
-    logic [5:0] yellow_hands_w [20:0];
-    logic [5:0] yellow_hands_r [20:0];
-    logic [5:0] wild_hands_w [20:0];
-    logic [5:0] wild_hands_r [20:0];
-    logic [5:0] wildf_hands_w [20:0];
-    logic [5:0] wildf_hands_r [20:0];
+    logic [5:0] red_hands_w [14:0];
+    logic [5:0] red_hands_r [14:0];
+    logic [5:0] blue_hands_w [14:0];
+    logic [5:0] blue_hands_r [14:0];
+    logic [5:0] green_hands_w [14:0];
+    logic [5:0] green_hands_r [14:0];
+    logic [5:0] yellow_hands_w [14:0];
+    logic [5:0] yellow_hands_r [14:0];
+    logic [5:0] wild_hands_w [3:0];
+    logic [5:0] wild_hands_r [3:0];
+    logic [5:0] wildf_hands_w [3:0];
+    logic [5:0] wildf_hands_r [3:0];
+    logic [5:0] hands_w [14:0];
+    logic [5:0] hands_r [14:0];
 
-    logic draw_card_w, draw_card_r;
-    logic [5:0] drawed_card_w, drawed_card_r;
-    logic [6:0] red_num_w, red_num_r, blue_num_w, blue_num_r, green_num_w, green_num_r, yellow_num_w, yellow_num_r;
-    logic [1:0] state_w, state_r;
-    logic [5:0] red_exist, blue_exist, green_exist, yellow_exist, wild_exist;
-    logic [2:0] number_exist_w [14:0];
-    logic [2:0] number_exist_r [14:0];
-    logic [6:0] red_iter_w, red_iter_r, blue_iter_w, blue_iter_r, green_iter_w, green_iter_r, yellow_iter_w, yellow_iter_r;
-    logic [5:0] search_card;
-    logic [5:0] out_cards_w, out_cards_r;
+    logic [3:0] red_num_w, red_num_r, blue_num_w, blue_num_r, green_num_w, green_num_r, yellow_num_w, yellow_num_r, wild_num_w, wild_num_r, wildf_num_w, wildf_num_r;
+    logic [2:0] state_w, state_r;
+    logic       state_hands_w, state_hands_r;
+    logic [2:0] draw_num_w, draw_num_r;
+    logic [3:0] iter_w, iter_r;
+    logic       sort_w, sort_r;
+    logic       out;
+
+    logic [3:0] lfsr_w, lfsr_r;
+
+    integer i, j, k;
     //----------------- wire connection -----------------//
-    assign red_exist = (red_num_r[0] || red_num_r[1] || red_num_r[2] || red_num_r[3] || red_num_r[4] || red_num_r[5]);
-    assign blue_exist = (blue_num_r[0] || blue_num_r[1] || blue_num_r[2] || blue_num_r[3] || blue_num_r[4] || blue_num_r[5]);
-    assign green_exist = (green_num_r[0] || green_num_r[1] || green_num_r[2] || green_num_r[3] || green_num_r[4] || green_num_r[5]);
-    assign yellow_exist = (yellow_num_r[0] || yellow_num_r[1] || yellow_num_r[2] || yellow_num_r[3] || yellow_num_r[4] || yellow_num_r[5]);
-    assign wild_exist = (number_exist_r[13][0] || number_exist_r[13][1] || number_exist_r[13][2] || number_exist_r[13][3] || number_exist_r[14][0] || number_exist_r[14][2] || number_exist_r[14][3]);
-    assign out_cards = out_cards_r;
-    assign draw_card = draw_card_r;
+    genvar x;
+    generate
+        for(x=0; x<15; x++) begin
+            assign o_hands[x] = hands_r[x];
+        end
+    endgenerate
+    assign o_out = out;
+    assign o_full = ((red_num_r + yellow_num_r + green_num_r + blue_num_r + wild_num_r + wildf_num_r) >= 4'd15);
     //----------------- combinational part -----------------//
-    always_comb begin : 
-        if(draw_card) begin
-            drawed_card_w = drawed_card;
+    always_comb begin
+        for(i = 0; i < 15; i = i + 1) begin
+            red_hands_w[i] = red_hands_r[i];
+            blue_hands_w[i] = blue_hands_r[i];
+            green_hands_w[i] = green_hands_r[i];
+            yellow_hands_w[i] = yellow_hands_r[i];
         end
-        else begin
-            drawedcard_w = drawed_card_r;
+        for(i = 0; i < 4; i = i + 1) begin
+            wild_hands_w[i] = wild_hands_r[i];
+            wildf_hands_w[i] = wild_hands_r[i];
         end
-        red_hands_w = red_hands_r;
-        blue_hands_w = blue_hands_r;
-        green_hands_w = green_hands_r;
-        yellow_hands_w = yellow_hands_r;
-        wild_hands_w = wild_hands_r;
-        wildf_hands_w = wildf_hands_r;
-        prev_card_w = prev_card_r;
-        out_cards_w = out_cards_r;
-        draw_card_w = draw_card_r;
-        iter_w = iter_r; // iterator for the number of cards in the hand
-        state_w = state_r;
+        red_num_w = red_num_r;
+        blue_num_w = blue_num_r;
+        green_num_w = green_num_r;
+        yellow_num_w = yellow_num_r;
+        wild_num_w = wild_num_r;
+        wildf_num_w = wildf_num_r;
+        draw_num_w = 3'd0;
+        iter_w = 3'd0;
+        sort_w = 1'b0;
+        lfsr_w = {lfsr_r[0]^lfsr_r[1], lfsr_r[3], lfsr_r[2], lfsr_r[1]};
         case(state_r)
             S_IDLE: begin
-                red_iter_w = 0;
-                if(start) begin // if it's the computer's turn
-                    state_w = S_CHECK_COLOR;
+                iter_w = 4'd0;
+                if(i_start) begin // if it's the player's turn
+                    if(i_draw_two) begin
+                        state_w = S_DRAW;
+                        draw_num_w = 3'd2;
+                    end
+                    else if(i_draw_four) begin
+                        state_w = S_DRAW;
+                        draw_num_w = 3'd4;
+                    end
+                    else begin
+                        state_w = S_PLAY;
+                        draw_num_w = 3'd0;
+                    end
                 end
-                else if(init) begin // if it's the initial hands
-                    state_w = S_INIT;
-                end
-                else if (skip) begin
-                    state_w = S_SKIP; // skip the turn
+                else if(i_init) begin // if it's the initial hands
+                    state_w = S_DRAW;
+                    draw_num_w = 3'd7;
                 end
                 else begin
                     state_w = S_IDLE;
                 end
             end
-            S_INIT: begin // recieve the initial hands, draw 7 cards
-                if(red_iter_r < 7) begin
-                    state_w = S_DRAW;
-                end
-            end
             S_DRAW: begin
-                number_exist_w[drawed_card[3:0]] = number_exist_r[drawed_card[3:0]] + 1;
-                case(drawed_card[5:4])
-                    2'b00: begin // red
-                        red_hands_w[red_num_r] = drawed_card;
-                        red_num_w = red_num_r + 1;
-                    end
-                    2'b01: begin // yellow
-                        yellow_hands_w[yellow_num_r] = drawed_card;
-                        yellow_num_w = yellow_num_r + 1;
-                    end
-                    2'b10: begin // green
-                        green_hands_w[green_num_r] = drawed_card;
-                        green_num_w = green_num_r + 1;
-                    end
-                    2'b11: begin // blue
-                        blue_hands_w[blue_num_r] = drawed_card;
-                        blue_num_w = blue_num_r + 1;
-                    end
-                endcase
-            end
-            S_OUT: begin
-                out = 1'b1; // play the card
-            end
-            S_SKIP: begin
-                state_w = S_IDLE; // skip the turn
-            end
-            S_CHECK_COLOR: begin
-                search_card = 6'b111111; // initialize the search card to NONE card
-                iter_w = 7'b0;
-                case(prev_card[5:4])
-                    2'b00: begin // red
-                        if(red_exist) begin
-                            state_w = S_OUT;
-                            red_num_w = red_num_r - 1;
-                            out_cards_w = red_hands_r[0];
-                            for(int i = 0; i < 20; i = i + 1) begin
-                                red_hands_w[i] = red_hands_r[i + 1]; // remove the card from the hand
-                            end
-                        end
-                        else begin
-                            state_w = S_CHECK_NUM;
-                        end
-                    end
-                    2'b01: begin // yellow
-                        if(yellow_exist) begin
-                            state_w = S_OUT;
-                            yellow_num_w = yellow_num_r - 1;
-                            out_cards_w = yellow_hands_r[0];
-                            for(int i = 0; i < 20; i = i + 1) begin
-                                yellow_hands_w[i] = yellow_hands_r[i + 1]; // remove the card from the hand
-                            end
-                        end
-                        else begin
-                            state_w = S_CHECK_NUM;
-                        end                        
-                    end
-                    2'b10: begin // green
-                        if(green_exist) begin
-                            state_w = S_OUT;
-                            green_num_w = green_num_r - 1;
-                            out_cards_w = green_hands_r[0];
-                            for(int i = 0; i < 20; i = i + 1) begin
-                                green_hands_w[i] = green_hands_r[i + 1]; // remove the card from the hand
-                            end
-                        end
-                        else begin
-                            state_w = S_CHECK_NUM;
-                        end
-                    end
-                    2'b11: begin // blue
-                        if(blue_exist) begin
-                            state_w = S_OUT;
-                            blue_num_w = blue_num_r - 1;
-                            out_cards_w = blue_hands_r[0];
-                            for(int i = 0; i < 20; i = i + 1) begin
-                                blue_hands_w[i] = blue_hands_r[i + 1]; // remove the card from the hand
-                            end
-                        end
-                        else begin
-                            state_w = S_CHECK_NUM;
-                        end
-                    end
-                endcase
-            end
-            S_CHECK_NUM: begin
-                search_card = 6'b111111; // initialize the search card to NONE card
-                red_iter_w = 7'b0;
-                blue_iter_w = 7'b0;
-                green_iter_w = 7'b0;
-                yellow_iter_w = 7'b0;
-                wild_iter_w = 7'b0;
-                case(prev_card[3:0])
-                    4'b0000: begin // 0
-                        if(number_exist_r[0][0] || number_exist_r[0][1]) begin
-                            state_w = S_SEARCH_NUM;
-                            search_card = {2'b00, 4'b0000}; // only care about the number, setting the color to 00 -> red, following will be don't care
-                            number_exist_w[0] = number_exist_r[0] - 1;
-                        end
-                        else begin
-                            state_w = S_DRAW;
-                            draw_card_w = 1'b1;
-                        end
-                    end
-                    4'b0001: begin // 1
-                        if(number_exist_r[1][0] || number_exist_r[1][1]) begin
-                            state_w = S_SEARCH_NUM;
-                            search_card = {2'b00, 4'b0001};
-                            number_exist_w[1] = number_exist_r[1] - 1;
-                        end
-                        else begin
-                            state_w = S_DRAW;
-                            draw_card_w = 1'b1;
-                        end
-                    end
-                    4'b0010: begin // 2
-                        if(number_exist_r[2][0] || number_exist_r[2][1]) begin
-                            state_w = S_SEARCH_NUM;
-                            search_card = {2'b00, 4'b0010};
-                            number_exist_w[2] = number_exist_r[2] - 1;
-                        end
-                        else begin
-                            state_w = S_DRAW;
-                            draw_card_w = 1'b1;
-                        end
-                    end
-                    4'b0011: begin // 3
-                        if(number_exist_r[3][0] || number_exist_r[3][1]) begin
-                            state_w = S_SEARCH_NUM;
-                            search_card = {2'b00, 4'b0011};
-                            number_exist_w[3] = number_exist_r[3] - 1;
-                        end
-                        else begin
-                            state_w = S_DRAW;
-                            draw_card_w = 1'b1;
-                        end
-                    end
-                    4'b0100: begin // 4
-                        if(number_exist_r[4][0] || number_exist_r[4][1]) begin
-                            state_w = S_SEARCH_NUM;
-                            search_card = {2'b00, 4'b0100};
-                            number_exist_w[4] = number_exist_r[4] - 1;
-                        end
-                        else begin
-                            state_w = S_DRAW;
-                            draw_card_w = 1'b1;
-                        end
-                    end
-                    4'b0101: begin // 5
-                        if(number_exist_r[5][0] || number_exist_r[5][1]) begin
-                            state_w = S_SEARCH_NUM;
-                            search_card = {2'b00, 4'b0101};
-                            number_exist_w[5] = number_exist_r[5] - 1;
-                        end
-                        else begin
-                            state_w = S_DRAW;
-                            draw_card_w = 1'b1;
-                        end
-                    end
-                    4'b0110: begin // 6
-                        if(number_exist_r[6][0] || number_exist_r[6][1]) begin
-                            state_w = S_SEARCH_NUM;
-                            search_card = {2'b00, 4'b0110};
-                            number_exist_w[6] = number_exist_r[6] - 1;
-                        end
-                        else begin
-                            state_w = S_DRAW;
-                            draw_card_w = 1'b1;
-                        end
-                    end
-                    4'b0111: begin // 7
-                        if(number_exist_r[7][0] || number_exist_r[7][1]) begin
-                            state_w = S_SEARCH_NUM;
-                            search_card = {2'b00, 4'b0111};
-                            number_exist_w[7] = number_exist_r[7] - 1;
-                        end
-                        else begin
-                            state_w = S_DRAW;
-                            draw_card_w = 1'b1;
-                        end
-                    end
-                    4'b1000: begin // 8
-                        if(number_exist_r[8][0] || number_exist_r[8][1]) begin
-                            state_w = S_SEARCH_NUM;
-                            search_card = {2'b00, 4'b1000};
-                            number_exist_w[8] = number_exist_r[8] - 1;
-                        end
-                        else begin
-                            state_w = S_DRAW;
-                            draw_card_w = 1'b1;
-                        end
-                    end
-                    4'b1001: begin // 9
-                        if(number_exist_r[9][0] || number_exist_r[9][1]) begin
-                            state_w = S_SEARCH_NUM;
-                            search_card = {2'b00, 4'b1001};
-                            number_exist_w[9] = number_exist_r[9] - 1;
-                        end
-                        else begin
-                            state_w = S_DRAW;
-                            draw_card_w = 1'b1;
-                        end
-                    end
-                    4'b1010: begin // skip
-                        if(number_exist_r[10][0] || number_exist_r[10][1]) begin
-                            state_w = S_SEARCH_NUM;
-                            search_card = {2'b00, 4'b1010};
-                            number_exist_w[10] = number_exist_r[10] - 1;
-                        end
-                        else begin
-                            state_w = S_DRAW;
-                            draw_card_w = 1'b1;
-                        end
-                    end
-                    4'b1011: begin // reverse
-                        if(number_exist_r[11][0] || number_exist_r[11][1]) begin
-                            state_w = S_SEARCH_NUM;
-                            search_card = {2'b00, 4'b1011};
-                            number_exist_w[11] = number_exist_r[11] - 1;
-                        end
-                        else begin
-                            state_w = S_DRAW;
-                            draw_card_w = 1'b1;
-                        end
-                    end
-                    4'b1100: begin // draw two
-                        if(number_exist_r[12][0] || number_exist_r[12][1]) begin
-                            state_w = S_SEARCH_NUM;
-                            search_card = {2'b00, 4'b1100};
-                            number_exist_w[12] = number_exist_r[12] - 1;
-                        end
-                        else begin
-                            state_w = S_DRAW;
-                            draw_card_w = 1'b1;
-                        end
-                    end
-                endcase
-            end
-            S_SEARCH_NUM: begin // Fuck the critical path will be so long, maybe better method?
-                if(red_iter_r < red_num_r) begin
-                    red_iter_w = red_iter_r + 1;
-                    if(hands_r[red_iter_r][3:0] == search_card[3:0]) begin
-                        out_cards_w = hands_r[iter_r];
-                        red_num_w = red_num_r - 1;
-                        state_w = S_OUT;
+                iter_w = 4'd0;
+                if(i_drawn) begin
+                    if(draw_num_r <= 1 && i_start) begin
+                        state_w = S_PLAY;
+                        sort_w = 1'b1;
+                        draw_num_w = 3'd0;
                     end
                     else begin
-                        state_w = S_SEARCH_NUM;
+                        state_w = S_DRAW;
+                        sort_w = 1'b0;
+                        draw_num_w = draw_num_r - 1;
                     end
-                end
-                else if(blue_iter_r < blue_num_r) begin
-                    blue_iter_w = blue_iter_r + 1;
-                    if(hands_r[blue_iter_r][3:0] == search_card[3:0]) begin
-                        out_cards_w = hands_r[iter_r];
-                        blue_num_w = blue_num_r - 1;
-                        state_w = S_OUT;
+                    if(i_drawed_card[3:0] == 4'b1101) begin // if the card is wild
+                        wild_hands_w[number_exist_r[13]] = i_drawed_card;
+                        wild_num_w = wild_num_r + 1;
                     end
-                    else begin
-                        state_w = S_SEARCH_NUM;
-                    end
-                end
-                else if(green_iter_r < green_num_r) begin
-                    green_iter_w = green_iter_r + 1;
-                    if(hands_r[green_iter_r][3:0] == search_card[3:0]) begin
-                        out_cards_w = hands_r[iter_r];
-                        green_num_w = green_num_r - 1;
-                        state_w = S_OUT;
+                    else if (i_drawed_card[3:0] == 4'b1110) begin // if the card is wild draw four
+                        wildf_hands_r[number_exist_r[14]] = i_drawed_card;
+                        wildf_num_w = wildf_num_r + 1;
                     end
                     else begin
-                        state_w = S_SEARCH_NUM;
-                    end
-                end
-                else if(yellow_iter_r < yellow_num_r) begin
-                    yellow_iter_w = yellow_iter_r + 1;
-                    if(hands_r[yellow_iter_r][3:0] == search_card[3:0]) begin
-                        out_cards_w = hands_r[iter_r];
-                        green_num_w = green_num_r - 1;
-                        state_w = S_OUT;
-                    end
-                    else begin
-                        state_w = S_SEARCH_NUM;
-                    end
-                end
-                else if(number_exist_r[13][0] || number_exist_r[13][1]) begin
-                    state_w = S_OUT;
-                    number_exist_w[13] = number_exist_r[13] - 1;
-                    out_cards_w = wild_hands_r[0];
-                    for(int i = 0; i < 20; i = i + 1) begin
-                        wild_hands_w[i] = wild_hands_r[i + 1]; // remove the card from the hand
-                    end
-                end
-                else if(number_exist_r[14][0] || number_exist_r[14][1]) begin
-                    state_w = S_OUT;
-                    number_exist_w[14] = number_exist_r[14] - 1;
-                    out_cards_w = wildf_hands_r[0];
-                    for(int i = 0; i < 20; i = i + 1) begin
-                        wildf_hands_w[i] = wildf_hands_r[i + 1]; // remove the card from the hand
+                        case(i_drawed_card[5:4])
+                            2'b00: begin // red
+                                red_hands_w[red_num_r] = i_drawed_card;
+                                red_num_w = red_num_r + 1;
+                            end
+                            2'b01: begin // yellow
+                                yellow_hands_w[yellow_num_r] = i_drawed_card;
+                                yellow_num_w = yellow_num_r + 1;
+                            end
+                            2'b10: begin // green
+                                green_hands_w[green_num_r] = i_drawed_card;
+                                green_num_w = green_num_r + 1;
+                            end
+                            2'b11: begin // blue
+                                blue_hands_w[blue_num_r] = i_drawed_card;
+                                blue_num_w = blue_num_r + 1;
+                            end
+                        endcase
                     end
                 end
                 else begin
-                    red_iter_w = 7'b0; // reset the iterator 
-                    blue_iter_w = 7'b0;
-                    green_iter_w = 7'b0;
-                    yellow_iter_w = 7'b0;
                     state_w = S_DRAW;
-                    draw_card_w = 1'b1;
+                    sort_w = 1'b0;
+                    draw_num_w = draw_num_r;
                 end
+            end
+            S_OUT: begin
+                iter_w = 4'd0;
+                out = 1'b1; // play the card
+                sort_w = 1'b0;
+                if(deck_idle)   state_w = S_IDLE;
+                else            state_w = S_OUT;
+            end
+            S_PLAY: begin
+                iter_w = 4'd0;
+                sort_w = 1'b0;
+                if(i_draw) begin
+                    state_w = S_NOCARD;
+                end
+                else if(i_play) begin
+                    if(i_out_card[3:0] == 4'd13 || i_out_card[3:0] == 4'd14 || i_out_card[5:4] == i_prev_card[5:4] || i_out_card[3:0] == i_prev_card[3:0]) begin
+                        case (i_out_card[5:4])
+                            2'b00:  state_w = S_SEARCHR;
+                            2'b01:  state_w = S_SEARCHY;
+                            2'b10:  state_w = S_SEARCHG;
+                            2'b11:  state_w = S_SEARCHB;
+                        endcase
+                    end
+                    else begin
+                        state_w = S_PLAY;
+                    end
+                end
+            end
+            S_SEARCHR: begin
+                if(red_hands_r[iter_r][3:0] == i_out_card[3:0]) begin
+                    state_w = S_OUT;
+                    sort_w = 1'b1;
+                    iter_w = 0;
+                    for(i=iter_r; i<red_num_r; i++) begin
+                        red_hands_w[iter_r] = red_hands_r[iter_r+1];
+                    end
+                    red_num_w = red_num_r - 1;
+                end
+                else begin
+                    state_w = S_SEARCHR;
+                    sort_w = 1'b0;
+                    iter_w = iter_r + 1;
+                    red_num_w = red_num_r;
+                end
+            end
+            S_SEARCHY: begin
+                if(yellow_hands_r[iter_r][3:0] == i_out_card[3:0]) begin
+                    state_w = S_OUT;
+                    sort_w = 1'b1;
+                    iter_w = 0;
+                    for(i=iter_r; i<yellow_num_r; i++) begin
+                        yellow_hands_w[iter_r] = yellow_hands_r[iter_r+1];
+                    end
+                    yellow_num_w = yellow_num_r - 1;
+                end
+                else begin
+                    state_w = S_SEARCHY;
+                    sort_w = 1'b0;
+                    iter_w = iter_r + 1;
+                    yellow_num_w = yellow_num_r;
+                end
+            end
+            S_SEARCHG: begin
+                if(green_hands_r[iter_r][3:0] == i_out_card[3:0]) begin
+                    state_w = S_OUT;
+                    sort_w = 1'b1;
+                    iter_w = 0;
+                    for(i=iter_r; i<green_num_r; i++) begin
+                        green_hands_w[iter_r] = green_hands_r[iter_r+1];
+                    end
+                    green_num_w = green_num_r - 1;
+                end
+                else begin
+                    state_w = S_SEARCHG;
+                    sort_w = 1'b0;
+                    iter_w = iter_r + 1;
+                    green_num_w = green_num_r;
+                end
+            end
+            S_SEARCHB: begin
+                if(blue_hands_r[iter_r][3:0] == i_out_card[3:0]) begin
+                    state_w = S_OUT;
+                    sort_w = 1'b1;
+                    iter_w = 0;
+                    for(i=iter_r; i<blue_num_r; i++) begin
+                        blue_hands_w[iter_r] = blue_hands_r[iter_r+1];
+                    end
+                    blue_num_w = blue_num_r - 1;
+                end
+                else begin
+                    state_w = S_SEARCHB;
+                    sort_w = 1'b0;
+                    iter_w = iter_r + 1;
+                    blue_num_w = blue_num_r;
+                end
+            end
+            S_NOCARD: begin
+                if(i_drawn) begin
+                    state_w = S_CHECK;
+                    if(i_drawed_card[3:0] == 4'b1101) begin // if the card is wild
+                        wild_hands_w[number_exist_r[13]] = i_drawed_card;
+                        wild_num_w = wild_num_r + 1;
+                    end
+                    else if (i_drawed_card[3:0] == 4'b1110) begin // if the card is wild draw four
+                        wildf_hands_r[number_exist_r[14]] = i_drawed_card;
+                        wildf_num_w = wildf_num_r + 1;
+                    end
+                    else begin
+                        case(i_drawed_card[5:4])
+                            2'b00: begin // red
+                                red_hands_w[red_num_r] = i_drawed_card;
+                                red_num_w = red_num_r + 1;
+                            end
+                            2'b01: begin // yellow
+                                yellow_hands_w[yellow_num_r] = i_drawed_card;
+                                yellow_num_w = yellow_num_r + 1;
+                            end
+                            2'b10: begin // green
+                                green_hands_w[green_num_r] = i_drawed_card;
+                                green_num_w = green_num_r + 1;
+                            end
+                            2'b11: begin // blue
+                                blue_hands_w[blue_num_r] = i_drawed_card;
+                                blue_num_w = blue_num_r + 1;
+                            end
+                        endcase
+                    end
+                end
+                else begin
+                    state_w = S_NOCARD;
+                    draw_num_w = draw_num_r;
+                end
+            end
+            S_CHECK: begin
+                state_w = (i_check) ? S_CHECK : S_IDLE;
+            end
+        endcase
+    end
+    always_comb begin
+        case (state_hands_r)
+            S_HOLD: begin
+                for(j=0; j<15; j++) begin
+                    hands_w[j] = hands_r[j];
+                end
+                if(sort_r)  state_w = S_SORT;
+                else        state_w = S_HOLD;
+            end
+            S_SORT: begin
+                for(j=0; j<red_num_r; j++) begin
+                    hands_w[j] = red_hands_r[j];
+                end
+                for(j=0; j<yellow_num_r; j++) begin
+                    hands_w[red_num_r + j] = yellow_hands_r[j];
+                end
+                for(j=0; j<green_num_r; j++) begin
+                    hands_w[red_num_r + yellow_num_r + j] = green_num_r[j];
+                end
+                for(j=0; j<blue_num_r; j++) begin
+                    hands_w[red_num_r + yellow_num_r + green_num_r + j] = blue_hands_r[j];
+                end
+                for(j=0; j<wild_num_r; j++) begin
+                    hands_w[red_num_r + yellow_num_r + green_num_r + blue_num_r + j] = wild_hands_r[j];
+                end
+                for(j=0; j<wildf_num_r; j++) begin
+                    hands_w[red_num_r + yellow_num_r + green_num_r + blue_num_r + wild_num_r + j] = wildf_hands_r[j];
+                end
+                for(j=red_num_r+yellow_num_r+green_num_r+blue_num_r+wild_num_r+wildf_num_r; j<15; j++) begin
+                    hands_w[j] = 6'b111111;
+                end
+                state_w = S_HOLD;
             end
         endcase
     end
     //----------------- sequential part -----------------//
-    always_ff @(posedge clk or posedge reset) begin : 
-        if(reset) begin
-            hands_r = 7'b0;
-            prev_card_r = 6'b0;
-            out_cards_r = 7'b0;
-            draw_card_r = 6'b0;
-            state_r = S_IDLE;
+    always_ff @(posedge i_clk or negedge i_rst_n) begin
+        if(!i_rst_n) begin
+            state_r <= S_IDLE;
+            state_hands_r <= S_HOLD;
+            for(k = 0; k < 15; k = k + 1) begin
+                red_hands_r[k] <= 6'b111111;
+                blue_hands_r[k] <= 6'b111111;
+                green_hands_r[k] <= 6'b111111;
+                yellow_hands_r[k] <= 6'b111111;
+            end
+            for(k = 0; k < 4; k = k + 1) begin
+                wild_hands_r[k] <= 6'b111111;
+                wildf_hands_r[k] <= 6'b111111;
+            end
+            red_num_r <= 4'b0;
+            blue_num_r <= 4'b0;
+            green_num_r <= 4'b0;
+            yellow_num_r <= 4'b0;
+            wild_num_r <= 4'b0;
+            wildf_num_r <= 4'b0;
+            draw_num_r <= 3'd0;
+            iter_r <= 4'd0;
+            lfsr_r <= 4'b0110;
+            sort_r <= 1'b0;
         end
         else begin
-            hands_r = hands_w;
-            prev_card_r = prev_card_w;
-            out_cards_r = out_cards_w;
-            draw_card_r = draw_card_w;
-            state_r = state_w;
+            state_r <= state_w;
+            state_hands_r <= state_hands_w;
+            for(k = 0; k < 15; k = k + 1) begin
+                red_hands_r[k] <= red_hands_w[k];
+                blue_hands_r[k] <= blue_hands_w[k];
+                green_hands_r[k] <= green_hands_w[k];
+                yellow_hands_r[k] <= yellow_hands_w[k];
+            end
+            for(k = 0; k < 4; k = k + 1) begin
+                wild_hands_r[k] <= wild_hands_w[k];
+                wildf_hands_r[k] <= wild_hands_w[k];
+            end
+            red_num_r <= red_num_w;
+            blue_num_r <= blue_num_w;
+            green_num_r <= green_num_w;
+            yellow_num_r <= yellow_num_w;
+            wild_num_r <= wild_num_w;
+            wildf_num_r <= wildf_num_w;
+            draw_num_r <= draw_num_w;
+            iter_r <= iter_w;
+            lfsr_r <= lfsr_w;
+            sort_r <= sart_w;
         end
     end
 endmodule
