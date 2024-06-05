@@ -296,11 +296,57 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                     end
                 end
             end
-            S_CHOOSE: begin // choose random color when played wild card (maybe if (color_exist != 0)&&(color != i_prev_card[5:4]) ?)
+            S_CHOOSE: begin // choose random color when played wild card
                 out = 1'b0;
                 draw_card = 1'b0;
-                out_card_w = {lfsr_r[1], lfsr_r[0], out_card_r[3:0]};
-                state_w = S_OUT;
+                if(lfsr[1:0] != i_prev_card[5:4]) begin
+                    case (lfsr[1:0])
+                        2'b00: begin
+                            if(red_exist) begin
+                                state_w = S_OUT;
+                                out_card_w = {2'b00, out_card_r[3:0]};
+                            end
+                            else begin
+                                state_w = S_CHOOSE;
+                                out_card_w = 6'd0;
+                            end
+                        end 
+                        2'b01: begin
+                            if(yellow_exist) begin
+                                state_w = S_OUT;
+                                out_card_w = {2'b01, out_card_r[3:0]};
+                            end
+                            else begin
+                                state_w = S_CHOOSE;
+                                out_card_w = 6'd0;
+                            end
+                        end 
+                        2'b10: begin
+                            if(green_exist) begin
+                                state_w = S_OUT;
+                                out_card_w = {2'b10, out_card_r[3:0]};
+                            end
+                            else begin
+                                state_w = S_CHOOSE;
+                                out_card_w = 6'd0;
+                            end
+                        end 
+                        2'b11: begin
+                            if(blue_exist) begin
+                                state_w = S_OUT;
+                                out_card_w = {2'b11, out_card_r[3:0]};
+                            end
+                            else begin
+                                state_w = S_CHOOSE;
+                                out_card_w = 6'd0;
+                            end
+                        end 
+                    endcase
+                end
+                else begin
+                    state_w = S_CHOOSE;
+                    out_card_w = 6'd0;
+                end
             end
             S_NOCARD: begin
                 out = 1'b0;
