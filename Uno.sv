@@ -61,72 +61,72 @@ module Uno(i_clk, i_rst_n, i_start);
     );
 
     Player P0(
-        .clk(i_clk),
-        .reset(i_rst_n),
-        .init(p0_init_r),
-        .start(p0_turn),
+        .i_clk(i_clk),
+        .i_rst_n(i_rst_n),
+        .i_init(p0_init_r),
+        .i_start(p0_turn),
         // .hand(),
-        .check(deck_idle),
-        .prev_card(last_card_r),
-        .out_cards(p0_pcard),
-        .draw_card(p0_draw),
+        .i_check(deck_idle),
+        .i_prev_card(last_card_r),
+        .o_out_card(p0_pcard),
+        .o_draw_card(p0_draw),
         .i_drawn(card_drawn),
         // .skip(),
-        .draw_two(p0_draw2_r),
-        .draw_four(p0_draw4_r),
-        .drawed_card(next_card),
-        .out(p0_play)
+        .i_draw_two(p0_draw2_r),
+        .i_draw_four(p0_draw4_r),
+        .i_drawed_card(next_card),
+        .o_out(p0_play)
     );
     Computer Com0(
-        .clk(i_clk),
-        .reset(i_rst_n),
-        .init(com0_init_r),
-        .start(com0_turn),
+        .i_clk(i_clk),
+        .i_rst_n(i_rst_n),
+        .i_init(com0_init_r),
+        .i_start(com0_turn),
         // .hands(),
-        .check(deck_idle),
-        .prev_card(last_card_r),
-        .out_cards(com0_pcard),
-        .draw_card(com0_draw),
+        .i_check(deck_idle),
+        .i_prev_card(last_card_r),
+        .o_out_card(com0_pcard),
+        .o_draw_card(com0_draw),
         .i_drawn(card_drawn),
         // .skip(),
-        .draw_two(com0_draw2_r),
-        .draw_four(com0_draw4_r),
-        .drawed_card(next_card),
-        .out(com0_play)
+        .i_draw_two(com0_draw2_r),
+        .i_draw_four(com0_draw4_r),
+        .i_drawed_card(next_card),
+        .o_out(com0_play)
     );
     Computer Com1(
-        .clk(i_clk),
-        .reset(i_rst_n),
-        .init(com1_init_r),
-        .start(com1_turn),
+        .i_clk(i_clk),
+        .i_rst_n(i_rst_n),
+        .i_init(com1_init_r),
+        .i_start(com1_turn),
         // .hands(),
-        .check(deck_idle),
-        .prev_card(last_card_r),
-        .out_cards(com1_pcard),
-        .draw_card(com1_draw),
+        .i_check(deck_idle),
+        .i_prev_card(last_card_r),
+        .o_out_card(com1_pcard),
+        .o_draw_card(com1_draw),
         .i_drawn(card_drawn),
         // .skip(),
-        .draw_two(com1_draw2_r),
-        .draw_four(com1_draw4_r),
-        .drawed_card(next_card),
-        .out(com1_play)
+        .i_draw_two(com1_draw2_r),
+        .i_draw_four(com1_draw4_r),
+        .i_drawed_card(next_card),
+        .o_out(com1_play)
     );
     Computer Com2(
-        .clk(i_clk),
-        .reset(i_rst_n),
-        .init(com2_init_r),
-        .start(com2_turn),
+        .i_clk(i_clk),
+        .i_rst_n(i_rst_n),
+        .i_init(com2_init_r),
+        .i_start(com2_turn),
         // .hands(),
-        .check(deck_idle),
-        .prev_card(last_card_r),
-        .out_cards(com2_pcard),
-        .draw_card(com2_draw),
+        .i_check(deck_idle),
+        .i_prev_card(last_card_r),
+        .o_out_card(com2_pcard),
+        .o_draw_card(com2_draw),
         .i_drawn(card_drawn),
         // .skip(),
-        .draw_two(com2_draw2_r),
-        .draw_four(com2_draw4_r),
-        .drawed_card(next_card),
-        .out(com2_play)
+        .i_draw_two(com2_draw2_r),
+        .i_draw_four(com2_draw4_r),
+        .i_drawed_card(next_card),
+        .o_out(com2_play)
     );
 
 
@@ -291,10 +291,28 @@ module Uno(i_clk, i_rst_n, i_start);
                         state_w = (reversed_r)? S_COM2:S_COM0;
                     end
                 end
+                else if(p0_draw) begin
+                    last_card_w = last_card_r;
+                    reversed_w = reversed_r;
+                    if(deck_idle) begin
+                        draw_num_w = 3'b001;
+                        if(reversed_r) begin
+                            state_w = S_COM2;
+                        end
+                        else begin
+                            state_w = S_COM0;                                
+                        end
+                    end
+                    else begin
+                        draw_num_w = 3'b000;
+                        state_w = S_PLAYER;
+                    end
+                end
                 else begin
                     draw_num_w = 3'b000;
                     state_w = S_PLAYER;
                     last_card_w = last_card_r;
+                    reversed_w = reversed_r;
                 end
             end
             S_P0_BUFF: begin
@@ -410,10 +428,28 @@ module Uno(i_clk, i_rst_n, i_start);
                         state_w = (reversed_r)? S_PLAYER:S_COM1;
                     end
                 end
+                else if(com0_draw) begin
+                    last_card_w = last_card_r;
+                    reversed_w = reversed_r;
+                    if(deck_idle) begin
+                        draw_num_w = 3'b001;
+                        if(reversed_r) begin
+                            state_w = S_PLAYER;
+                        end
+                        else begin
+                            state_w = S_COM1;                                
+                        end
+                    end
+                    else begin
+                        draw_num_w = 3'b000;
+                        state_w = S_COM0;
+                    end
+                end
                 else begin
                     draw_num_w = 3'b000;
                     state_w = S_COM0;
                     last_card_w = last_card_r;
+                    reversed_w = reversed_r;
                 end
             end
             S_COM0_BUFF: begin
@@ -529,10 +565,28 @@ module Uno(i_clk, i_rst_n, i_start);
                         state_w = (reversed_r)? S_COM0:S_COM2;
                     end
                 end
+                else if(com1_draw) begin
+                    last_card_w = last_card_r;
+                    reversed_w = reversed_r;
+                    if(deck_idle) begin
+                        draw_num_w = 3'b001;
+                        if(reversed_r) begin
+                            state_w = S_COM0;
+                        end
+                        else begin
+                            state_w = S_COM2;                                
+                        end
+                    end
+                    else begin
+                        draw_num_w = 3'b000;
+                        state_w = S_COM1;
+                    end
+                end
                 else begin
                     draw_num_w = 3'b000;
                     state_w = S_COM1;
                     last_card_w = last_card_r;
+                    reversed_w = reversed_r;
                 end
             end
             S_COM1_BUFF: begin
@@ -648,10 +702,28 @@ module Uno(i_clk, i_rst_n, i_start);
                         state_w = (reversed_r)? S_COM1:S_PLAYER;
                     end
                 end
+                else if(com2_draw) begin
+                    last_card_w = last_card_r;
+                    reversed_w = reversed_r;
+                    if(deck_idle) begin
+                        draw_num_w = 3'b001;
+                        if(reversed_r) begin
+                            state_w = S_COM1;
+                        end
+                        else begin
+                            state_w = S_PLAYER;                                
+                        end
+                    end
+                    else begin
+                        draw_num_w = 3'b000;
+                        state_w = S_COM2;
+                    end
+                end
                 else begin
                     draw_num_w = 3'b000;
                     state_w = S_COM2;
                     last_card_w = last_card_r;
+                    reversed_w = reversed_r;
                 end
             end
             S_COM2_BUFF: begin
