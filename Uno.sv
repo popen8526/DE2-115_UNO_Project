@@ -1,4 +1,4 @@
-module Uno(i_cle, i_rst_n, i_start);
+module Uno(i_clk, i_rst_n, i_start);
     input i_clk, i_rst_n, i_start;
 
 
