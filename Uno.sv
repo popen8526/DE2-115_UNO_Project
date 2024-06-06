@@ -6,6 +6,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
     output [ 5:0] o_hands [107:0];
     output        o_end;
 
+
     localparam S_IDLE      = 4'd0;
     localparam S_SHUFFLE   = 4'd1;
     localparam S_PLAYER    = 4'd2;
