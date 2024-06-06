@@ -1,5 +1,11 @@
-module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
+module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_score, o_index, o_hands, o_end);
     input i_clk, i_rst_n, i_start, i_left, i_right, i_select;
+    output [ 6:0] o_hand_num [3:0];
+    output [10:0] o_score [3:0];
+    output [ 6:0] o_index;
+    output [ 5:0] o_hands [107:0];
+    output        o_end;
+
 
     localparam S_IDLE      = 4'd0;
     localparam S_SHUFFLE   = 4'd1;
@@ -15,7 +21,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
     localparam S_COM0_BUFF = 4'd11;
     localparam S_COM1_BUFF = 4'd12;
     localparam S_COM2_BUFF = 4'd13;
-    localparam S_CAL       = 4'd14;
+    localparam S_END       = 4'd14;
     
     logic [ 2:0] state_w, state_r;
     // wire definition for deck
@@ -29,7 +35,6 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
     // wire definition for player and computer
     logic        p0_init_w, p0_init_r, com0_init_w, com0_init_r, com1_init_w, com1_init_r, com2_init_w, com2_init_r;
     logic [ 4:0] draw_count_w, draw_count_r; // counter for initialization draw
-    logic [ 1:0] turn; // 00:p0, 01:com0, 10:com1, 11:com2
     logic        p0_turn, com0_turn, com1_turn, com2_turn;
     logic [ 5:0] p0_pcard, com0_pcard, com1_pcard, com2_pcard;
     logic        p0_draw, com0_draw, com1_draw, com2_draw;
@@ -38,14 +43,17 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
     logic [ 5:0] p0_dcard, com0_dcard, com1_dcard, com2_dcard;
     logic        p0_play, com0_play, com1_play, com2_play;
     logic [ 5:0] last_card_w, last_card_r;
+    logic        reversed_w, reversed_r;
+    logic        finish;
     
     // combinational logic
-    assign insert = (turn[1]) ? (turn[0] ? com2_play : com1_play) : (turn[0] ? com0_play : p0_play);
-    assign in_card = (turn[1]) ? (turn[0] ? com2_pcard : com1_pcard) : (turn[0] ? com0_pcard : p0_pcard);
-    assign p0_turn = (turn == 2'b00);
-    assign com0_turn = (turn == 2'b01);
-    assign com1_turn = (turn == 2'b10);
-    assign com2_turn = (turn == 2'b11);
+    assign insert = ((p0_turn && p0_play) || (com0_turn && com0_play) || (com1_turn && com1_play) || (com2_turn && com2_play));
+    assign in_card = (com1_turn || com2_turn) ? ((p0_turn || com0_turn) ? com2_pcard : com1_pcard) : ((p0_turn || com0_turn) ? com0_pcard : p0_pcard);
+    assign p0_turn = ((state_r == S_PLAYER) || (state_r == S_P0_BUFF));
+    assign com0_turn = ((state_r == S_COM0) || (state_r == S_COM0_BUFF));
+    assign com1_turn = ((state_r == S_COM1) || (state_r == S_COM1_BUFF));
+    assign com2_turn = ((state_r == S_COM2) || (state_r == S_COM2_BUFF));
+    assign o_end = finish;
 
     Deck Deck(
         .i_clk(i_clk),
@@ -64,13 +72,11 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
         .i_rst_n(i_rst_n),
         .i_init(p0_init_r),
         .i_start(p0_turn),
-        // .hand(),
         .i_check(deck_idle),
         .i_prev_card(last_card_r),
         .o_out_card(p0_pcard),
         .o_draw(p0_draw),
         .i_drawn(card_drawn),
-        // .skip(),
         .i_draw_two(p0_draw2_r),
         .i_draw_four(p0_draw4_r),
         .i_drawed_card(next_card),
@@ -78,8 +84,10 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
         .i_left(i_left),
         .i_right(i_right),
         .i_select(i_select),
-        .o_hands(),
-        .o_index()
+        .o_hands(o_hands),
+        .o_index(o_index),
+        .o_hand_num(o_hand_num[0]),
+        .o_score(o_score[0])
     );
 
     Computer Com0(
@@ -87,17 +95,17 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
         .i_rst_n(i_rst_n),
         .i_init(com0_init_r),
         .i_start(com0_turn),
-        // .hands(),
         .i_check(deck_idle),
         .i_prev_card(last_card_r),
         .o_out_card(com0_pcard),
         .o_draw_card(com0_draw),
         .i_drawn(card_drawn),
-        // .skip(),
         .i_draw_two(com0_draw2_r),
         .i_draw_four(com0_draw4_r),
         .i_drawed_card(next_card),
-        .o_out(com0_play)
+        .o_out(com0_play),
+        .o_hand_num(o_hand_num[1]),
+        .o_score(o_score[1])
     );
 
     Computer Com1(
@@ -105,17 +113,17 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
         .i_rst_n(i_rst_n),
         .i_init(com1_init_r),
         .i_start(com1_turn),
-        // .hands(),
         .i_check(deck_idle),
         .i_prev_card(last_card_r),
         .o_out_card(com1_pcard),
         .o_draw_card(com1_draw),
         .i_drawn(card_drawn),
-        // .skip(),
         .i_draw_two(com1_draw2_r),
         .i_draw_four(com1_draw4_r),
         .i_drawed_card(next_card),
-        .o_out(com1_play)
+        .o_out(com1_play),
+        .o_hand_num(o_hand_num[2]),
+        .o_score(o_score[2])
     );
 
     Computer Com2(
@@ -123,23 +131,41 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
         .i_rst_n(i_rst_n),
         .i_init(com2_init_r),
         .i_start(com2_turn),
-        // .hands(),
         .i_check(deck_idle),
         .i_prev_card(last_card_r),
         .o_out_card(com2_pcard),
         .o_draw_card(com2_draw),
         .i_drawn(card_drawn),
-        // .skip(),
         .i_draw_two(com2_draw2_r),
         .i_draw_four(com2_draw4_r),
         .i_drawed_card(next_card),
-        .o_out(com2_play)
+        .o_out(com2_play),
+        .o_hand_num(o_hand_num[3]),
+        .o_score(o_score[3])
     );
 
 
     always_comb begin
+        shuffle_w = 1'b0;
+        p0_init_w = 1'b0;
+        com0_init_w = 1'b0;
+        com1_init_w = 1'b0;
+        com2_init_w = 1'b0;
+        p0_draw2_w = 1'b0;
+        com0_draw2_w = 1'b0;
+        com1_draw2_w = 1'b0;
+        com2_draw2_w = 1'b0;
+        p0_draw4_w = 1'b0;
+        com0_draw4_w = 1'b0;
+        com1_draw4_w = 1'b0;
+        com2_draw4_w = 1'b0;
+        draw_count_w = draw_count_r;
+        draw_num_w = draw_num_r;
+        last_card_w = last_card_r;
+        reversed_w = reversed_r;
         case(state_r)
             S_IDLE: begin
+                finish = 1'b0;
                 if(i_start) begin
                     state_w = S_SHUFFLE;
                     shuffle_w = 1'b1;
@@ -150,6 +176,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
                 end
             end
             S_SHUFFLE: begin
+                finish = 1'b0;
                 if(deck_idle) begin
                     state_w = S_P0_INIT;
                     p0_init_w = 1'b1;
@@ -162,7 +189,9 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
                 end
             end
             S_P0_INIT: begin
+                finish = 1'b0;
                 if(draw_count_r >= 5'd7) begin
+                    draw_count_w = draw_count_r;
                     if(deck_idle) begin
                         state_w = S_COM0_INIT;
                         com0_init_w = 1'b1;
@@ -177,12 +206,15 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
                 else begin
                     state_w = S_P0_INIT;
                     com0_init_w = 1'b0;
+                    draw_num_w = 3'b000;
                     if(card_drawn)  draw_count_w = draw_count_r + 1;
                     else            draw_count_w = draw_count_r;
                 end
             end
             S_COM0_INIT: begin
+                finish = 1'b0;
                 if(draw_count_r >= 5'd14) begin
+                    draw_count_w = draw_count_r;
                     if(deck_idle) begin
                         state_w = S_COM1_INIT;
                         com1_init_w = 1'b1;
@@ -197,12 +229,15 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
                 else begin
                     state_w = S_COM0_INIT;
                     com1_init_w = 1'b0;
+                    draw_num_w = 3'b000;
                     if(card_drawn)  draw_count_w = draw_count_r + 1;
                     else            draw_count_w = draw_count_r;
                 end
             end
             S_COM1_INIT: begin
+                finish = 1'b0;
                 if(draw_count_r >= 5'd21) begin
+                    draw_count_w = draw_count_r;
                     if(deck_idle) begin
                         state_w = S_COM2_INIT;
                         com2_init_w = 1'b1;
@@ -217,71 +252,71 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
                 else begin
                     state_w = S_COM1_INIT;
                     com2_init_w = 1'b0;
+                    draw_num_w = 3'b000;
                     if(card_drawn)  draw_count_w = draw_count_r + 1;
                     else            draw_count_w = draw_count_r;
                 end
             end
             S_COM2_INIT: begin
+                finish = 1'b0;
                 if(draw_count_r >= 5'd28) begin
                     draw_count_w = 0;
+                    draw_num_w = 3'b000;
                     if(deck_idle)   state_w = S_PLAYER;
                     else            state_w = S_COM2_INIT;
                 end
                 else begin
                     state_w = S_COM2_INIT;
+                    draw_num_w = 3'b000;
                     if(card_drawn)  draw_count_w = draw_count_r + 1;
                     else            draw_count_w = draw_count_r;
                 end
             end
             // 10: skip, 11: reverse, 12: draw two, 13: wild, 14: wild draw four
             S_PLAYER: begin
-                turn = 2'b00;
+                finish = 1'b0;
                 if(p0_play) begin
                     last_card_w = p0_pcard;
                     reversed_w = reversed_r ^ (p0_pcard[3:0] == 4'd11);
-                    if(p0_pcard[3:0] == 4'd10) begin // skip
+                    if(o_hand_num[0] == 7'd0) begin
+                        state_w = S_END;
                         draw_num_w = 3'b000;
-                        state_w = S_COM1;
                     end
-                    else if(p0_pcard[3:0] == 4'd11) begin // reverse
-                        draw_num_w = 3'b000;
-                        state_w = (reversed_r)? S_COM0:S_COM2;
-                    end
-                    else if(p0_pcard[3:0] == 4'd12) begin // draw two
-                        if(deck_idle) begin
+                    else begin
+                        if(p0_pcard[3:0] == 4'd10) begin // skip
+                            draw_num_w = 3'b000;
+                            state_w = S_COM1;
+                        end
+                        else if(p0_pcard[3:0] == 4'd11) begin // reverse
+                            draw_num_w = 3'b000;
+                            state_w = (reversed_r)? S_COM0:S_COM2;
+                        end
+                        else if(p0_pcard[3:0] == 4'd12) begin // draw two
                             draw_num_w = 3'b010;
+                            state_w = S_P0_BUFF;
                             if(reversed_r) begin
-                                state_w = S_COM2;
                                 com0_draw2_w = 1'b0;
                                 com0_draw4_w = 1'b0;
                                 com2_draw2_w = 1'b1;
                                 com2_draw4_w = 1'b0;
                             end
                             else begin
-                                state_w = S_COM0;
                                 com0_draw2_w = 1'b1;
                                 com0_draw4_w = 1'b0;
                                 com2_draw2_w = 1'b0;
                                 com2_draw4_w = 1'b0;
                             end
                         end
-                        else begin
-                            draw_num_w = 3'b000;
-                            state_w = S_P0_BUFF;
-                        end
-                    end
-                    else if(p0_pcard[3:0] == 4'd14) begin // wild draw four
-                        if(deck_idle) begin
+                        else if(p0_pcard[3:0] == 4'd14) begin // wild draw four
                             draw_num_w = 3'b100;
+                            state_w = S_P0_BUFF;
                             if(reversed_r) begin
-                                state_w = S_COM2;
                                 com0_draw2_w = 1'b0;
                                 com0_draw4_w = 1'b0;
                                 com2_draw2_w = 1'b0;
                                 com2_draw4_w = 1'b1;
                             end
                             else begin
-                                state_w = S_COM0;
                                 com0_draw2_w = 1'b0;
                                 com0_draw4_w = 1'b1;
                                 com2_draw2_w = 1'b0;
@@ -290,12 +325,8 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
                         end
                         else begin
                             draw_num_w = 3'b000;
-                            state_w = S_P0_BUFF;
+                            state_w = (reversed_r)? S_COM2 : S_COM0;
                         end
-                    end
-                    else begin
-                        draw_num_w = 3'b000;
-                        state_w = (reversed_r)? S_COM2:S_COM0;
                     end
                 end
                 else if(p0_draw) begin
@@ -307,7 +338,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
                             state_w = S_COM2;
                         end
                         else begin
-                            state_w = S_COM0;                                
+                            state_w = S_COM0;
                         end
                     end
                     else begin
@@ -323,102 +354,65 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
                 end
             end
             S_P0_BUFF: begin
-                turn = 2'b00;
+                finish = 1'b0;
                 last_card_w = last_card_r;
                 reversed_w = reversed_r;
+                com0_draw2_w = com0_draw2_r;
+                com0_draw4_w = com0_draw4_r;
+                com2_draw2_w = com2_draw2_r;
+                com2_draw4_w = com2_draw4_r;
+                draw_num_w = draw_num_r;
                 if(deck_idle) begin
-                    if(last_card_r[3:0] == 4'd12) begin // draw two
-                        draw_num_w = 3'b010;
-                        if(reversed_r) begin
-                            state_w = S_COM2;
-                            com0_draw2_w = 1'b0;
-                            com0_draw4_w = 1'b0;
-                            com2_draw2_w = 1'b1;
-                            com2_draw4_w = 1'b0;
-                        end
-                        else begin
-                            state_w = S_COM0;
-                            com0_draw2_w = 1'b1;
-                            com0_draw4_w = 1'b0;
-                            com2_draw2_w = 1'b0;
-                            com2_draw4_w = 1'b0;
-                        end
-                    end
-                    else if(last_card_r[3:0] == 4'd14) begin // wild draw four
-                        draw_num_w = 3'b100;
-                        if(reversed_r) begin
-                            state_w = S_COM2;
-                            com0_draw2_w = 1'b0;
-                            com0_draw4_w = 1'b0;
-                            com2_draw2_w = 1'b0;
-                            com2_draw4_w = 1'b1;
-                        end
-                        else begin
-                            state_w = S_COM0;
-                            com0_draw2_w = 1'b0;
-                            com0_draw4_w = 1'b1;
-                            com2_draw2_w = 1'b0;
-                            com2_draw4_w = 1'b0;
-                        end
-                    end
-                    else begin
-                        draw_num_w = 3'b000;
-                        state_w = (reversed_r)? S_COM2:S_COM0;
-                    end
+                    state_w = (com0_draw2_r || com0_draw4_r) ? S_COM0 : S_COM2;
                 end
                 else begin
-                    draw_num_w = 3'b000;
                     state_w = S_P0_BUFF;
                 end
             end
             S_COM0: begin
-                turn = 2'b01;
+                finish = 1'b0;
                 if(com0_play) begin
                     last_card_w = com0_pcard;
                     reversed_w = reversed_r ^ (com0_pcard[3:0] == 4'd11);
-                    if(com0_pcard[3:0] == 4'd10) begin // skip
+                    if(o_hand_num[1] == 7'd0) begin
+                        state_w = S_END;
                         draw_num_w = 3'b000;
-                        state_w = S_COM2;
                     end
-                    else if(com0_pcard[3:0] == 4'd11) begin // reverse
-                        draw_num_w = 3'b000;
-                        state_w = (reversed_r)? S_COM1:S_PLAYER;
-                    end
-                    else if(com0_pcard[3:0] == 4'd12) begin // draw two
-                        if(deck_idle) begin
+                    else begin
+                        if(com0_pcard[3:0] == 4'd10) begin // skip
+                            draw_num_w = 3'b000;
+                            state_w = S_COM2;
+                        end
+                        else if(com0_pcard[3:0] == 4'd11) begin // reverse
+                            draw_num_w = 3'b000;
+                            state_w = (reversed_r)? S_COM1:S_PLAYER;
+                        end
+                        else if(com0_pcard[3:0] == 4'd12) begin // draw two
                             draw_num_w = 3'b010;
+                            state_w = S_COM0_BUFF;
                             if(reversed_r) begin
-                                state_w = S_PLAYER;
                                 com1_draw2_w = 1'b0;
                                 com1_draw4_w = 1'b0;
                                 p0_draw2_w = 1'b1;
                                 p0_draw4_w = 1'b0;
                             end
                             else begin
-                                state_w = S_COM1;
                                 com1_draw2_w = 1'b1;
                                 com1_draw4_w = 1'b0;
                                 p0_draw2_w = 1'b0;
                                 p0_draw4_w = 1'b0;
                             end
                         end
-                        else begin
-                            draw_num_w = 3'b000;
-                            state_w = S_COM0_BUFF;
-                        end
-                    end
-                    else if(com0_pcard[3:0] == 4'd14) begin // wild draw four
-                        if(deck_idle) begin
+                        else if(com0_pcard[3:0] == 4'd14) begin // wild draw four
                             draw_num_w = 3'b100;
+                            state_w = S_COM0_BUFF;
                             if(reversed_r) begin
-                                state_w = S_PLAYER;
                                 com1_draw2_w = 1'b0;
                                 com1_draw4_w = 1'b0;
                                 p0_draw2_w = 1'b0;
                                 p0_draw4_w = 1'b1;
                             end
                             else begin
-                                state_w = S_COM1;
                                 com1_draw2_w = 1'b0;
                                 com1_draw4_w = 1'b1;
                                 p0_draw2_w = 1'b0;
@@ -427,12 +421,8 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
                         end
                         else begin
                             draw_num_w = 3'b000;
-                            state_w = S_COM0_BUFF;
+                            state_w = (reversed_r)? S_PLAYER : S_COM1;
                         end
-                    end
-                    else begin
-                        draw_num_w = 3'b000;
-                        state_w = (reversed_r)? S_PLAYER:S_COM1;
                     end
                 end
                 else if(com0_draw) begin
@@ -460,70 +450,42 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
                 end
             end
             S_COM0_BUFF: begin
-                turn = 2'b01;
+                finish = 1'b0;
                 last_card_w = last_card_r;
                 reversed_w = reversed_r;
+                com1_draw2_w = com1_draw2_r;
+                com1_draw4_w = com1_draw4_r;
+                p0_draw2_w = p0_draw2_r;
+                p0_draw4_w = p0_draw4_r;
+                draw_num_w = draw_num_r;
                 if(deck_idle) begin
-                    if(last_card_r[3:0] == 4'd12) begin // draw two
-                        draw_num_w = 3'b010;
-                        if(reversed_r) begin
-                            state_w = S_PLAYER;
-                            com1_draw2_w = 1'b0;
-                            com1_draw4_w = 1'b0;
-                            p0_draw2_w = 1'b1;
-                            p0_draw4_w = 1'b0;
-                        end
-                        else begin
-                            state_w = S_COM1;
-                            com1_draw2_w = 1'b1;
-                            com1_draw4_w = 1'b0;
-                            p0_draw2_w = 1'b0;
-                            p0_draw4_w = 1'b0;
-                        end
-                    end
-                    else if(last_card_r[3:0] == 4'd14) begin // wild draw four
-                        draw_num_w = 3'b100;
-                        if(reversed_r) begin
-                            state_w = S_PLAYER;
-                            com1_draw2_w = 1'b0;
-                            com1_draw4_w = 1'b0;
-                            p0_draw2_w = 1'b0;
-                            p0_draw4_w = 1'b1;
-                        end
-                        else begin
-                            state_w = S_COM1;
-                            com1_draw2_w = 1'b0;
-                            com1_draw4_w = 1'b1;
-                            p0_draw2_w = 1'b0;
-                            p0_draw4_w = 1'b0;
-                        end
-                    end
-                    else begin
-                        draw_num_w = 3'b000;
-                        state_w = (reversed_r)? S_PLAYER:S_COM1;
-                    end
+                    state_w = (com1_draw2_r || com1_draw4_r) ? S_COM1 : S_PLAYER;
                 end
                 else begin
-                    draw_num_w = 3'b000;
                     state_w = S_COM0_BUFF;
                 end
             end
             S_COM1: begin
-                turn = 2'b10
+                finish = 1'b0;
                 if(com1_play) begin
                     last_card_w = com1_pcard;
                     reversed_w = reversed_r ^ (com1_pcard[3:0] == 4'd11);
-                    if(com1_pcard[3:0] == 4'd10) begin // skip
+                    if(o_hand_num[2] == 7'd0) begin
+                        state_w = S_END;
                         draw_num_w = 3'b000;
-                        state_w = S_PLAYER;
                     end
-                    else if(com1_pcard[3:0] == 4'd11) begin // reverse
-                        draw_num_w = 3'b000;
-                        state_w = (reversed_r)? S_COM2:S_COM0;
-                    end
-                    else if(com1_pcard[3:0] == 4'd12) begin // draw two
-                        if(deck_idle) begin
+                    else begin
+                        if(com1_pcard[3:0] == 4'd10) begin // skip
+                            draw_num_w = 3'b000;
+                            state_w = S_PLAYER;
+                        end
+                        else if(com1_pcard[3:0] == 4'd11) begin // reverse
+                            draw_num_w = 3'b000;
+                            state_w = (reversed_r)? S_COM2:S_COM0;
+                        end
+                        else if(com1_pcard[3:0] == 4'd12) begin // draw two
                             draw_num_w = 3'b010;
+                            state_w = S_COM1_BUFF;
                             if(reversed_r) begin
                                 state_w = S_COM0;
                                 com2_draw2_w = 1'b0;
@@ -539,14 +501,9 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
                                 com0_draw4_w = 1'b0;
                             end
                         end
-                        else begin
-                            draw_num_w = 3'b000;
-                            state_w = S_COM1_BUFF;
-                        end
-                    end
-                    else if(com1_pcard[3:0] == 4'd14) begin // wild draw four
-                        if(deck_idle) begin
+                        else if(com1_pcard[3:0] == 4'd14) begin // wild draw four
                             draw_num_w = 3'b100;
+                            state_w = S_COM1_BUFF;
                             if(reversed_r) begin
                                 state_w = S_COM0;
                                 com2_draw2_w = 1'b0;
@@ -564,12 +521,8 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
                         end
                         else begin
                             draw_num_w = 3'b000;
-                            state_w = S_COM1_BUFF;
+                            state_w = (reversed_r)? S_COM0:S_COM2;
                         end
-                    end
-                    else begin
-                        draw_num_w = 3'b000;
-                        state_w = (reversed_r)? S_COM0:S_COM2;
                     end
                 end
                 else if(com1_draw) begin
@@ -597,70 +550,42 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
                 end
             end
             S_COM1_BUFF: begin
-                turn = 2'b10;
+                finish = 1'b0;
                 last_card_w = last_card_r;
                 reversed_w = reversed_r;
+                com2_draw2_w = com2_draw2_r;
+                com2_draw4_w = com2_draw4_r;
+                com0_draw2_w = com0_draw2_r;
+                com0_draw4_w = com0_draw4_r;
+                draw_num_w = draw_num_r;
                 if(deck_idle) begin
-                    if(last_card_r[3:0] == 4'd12) begin // draw two
-                        draw_num_w = 3'b010;
-                        if(reversed_r) begin
-                            state_w = S_COM0;
-                            com2_draw2_w = 1'b0;
-                            com2_draw4_w = 1'b0;
-                            com0_draw2_w = 1'b1;
-                            com0_draw4_w = 1'b0;
-                        end
-                        else begin
-                            state_w = S_COM2;
-                            com2_draw2_w = 1'b1;
-                            com2_draw4_w = 1'b0;
-                            com0_draw2_w = 1'b0;
-                            com0_draw4_w = 1'b0;
-                        end
-                    end
-                    else if(last_card_r[3:0] == 4'd14) begin // wild draw four
-                        draw_num_w = 3'b100;
-                        if(reversed_r) begin
-                            state_w = S_COM0;
-                            com2_draw2_w = 1'b0;
-                            com2_draw4_w = 1'b0;
-                            com0_draw2_w = 1'b0;
-                            com0_draw4_w = 1'b1;
-                        end
-                        else begin
-                            state_w = S_COM2;
-                            com2_draw2_w = 1'b0;
-                            com2_draw4_w = 1'b1;
-                            com0_draw2_w = 1'b0;
-                            com0_draw4_w = 1'b0;
-                        end
-                    end
-                    else begin
-                        draw_num_w = 3'b000;
-                        state_w = (reversed_r)? S_COM0:S_COM2;
-                    end
+                    state_w = (com2_draw2_r || com2_draw4_r) ? S_COM2 : S_COM0;
                 end
                 else begin
-                    draw_num_w = 3'b000;
                     state_w = S_COM1_BUFF;
                 end
             end
             S_COM2: begin
-                turn = 2'b11;
+                finish = 1'b0;
                 if(com2_play) begin
                     last_card_w = com2_pcard;
                     reversed_w = reversed_r ^ (com2_pcard[3:0] == 4'd11);
-                    if(com2_pcard[3:0] == 4'd10) begin // skip
+                    if(o_hand_num[3] == 7'd0) begin
+                        state_w = S_END;
                         draw_num_w = 3'b000;
-                        state_w = S_COM0;
                     end
-                    else if(com2_pcard[3:0] == 4'd11) begin // reverse
-                        draw_num_w = 3'b000;
-                        state_w = (reversed_r)? S_PLAYER:S_COM1;
-                    end
-                    else if(com2_pcard[3:0] == 4'd12) begin // draw two
-                        if(deck_idle) begin
+                    else begin
+                        if(com2_pcard[3:0] == 4'd10) begin // skip
+                            draw_num_w = 3'b000;
+                            state_w = S_COM0;
+                        end
+                        else if(com2_pcard[3:0] == 4'd11) begin // reverse
+                            draw_num_w = 3'b000;
+                            state_w = (reversed_r)? S_PLAYER:S_COM1;
+                        end
+                        else if(com2_pcard[3:0] == 4'd12) begin // draw two
                             draw_num_w = 3'b010;
+                            state_w = S_COM2_BUFF;
                             if(reversed_r) begin
                                 state_w = S_COM1;
                                 p0_draw2_w = 1'b0;
@@ -676,14 +601,9 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
                                 com1_draw4_w = 1'b0;
                             end
                         end
-                        else begin
-                            draw_num_w = 3'b000;
-                            state_w = S_COM2_BUFF;
-                        end
-                    end
-                    else if(com2_pcard[3:0] == 4'd14) begin // wild draw four
-                        if(deck_idle) begin
+                        else if(com2_pcard[3:0] == 4'd14) begin // wild draw four
                             draw_num_w = 3'b100;
+                            state_w = S_COM2_BUFF;
                             if(reversed_r) begin
                                 state_w = S_COM0;
                                 p0_draw2_w = 1'b0;
@@ -701,12 +621,8 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
                         end
                         else begin
                             draw_num_w = 3'b000;
-                            state_w = S_COM2_BUFF;
+                            state_w = (reversed_r)? S_COM1:S_PLAYER;
                         end
-                    end
-                    else begin
-                        draw_num_w = 3'b000;
-                        state_w = (reversed_r)? S_COM1:S_PLAYER;
                     end
                 end
                 else if(com2_draw) begin
@@ -734,56 +650,25 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
                 end
             end
             S_COM2_BUFF: begin
-                turn = 2'b11;
+                finish = 1'b0;
                 last_card_w = last_card_r;
                 reversed_w = reversed_r;
+                p0_draw2_w = p0_draw2_r;
+                p0_draw4_w = p0_draw4_r;
+                com1_draw2_w = com1_draw2_r;
+                com1_draw4_w = com1_draw4_r;
+                draw_num_w = draw_num_r;
                 if(deck_idle) begin
-                    if(last_card_r[3:0] == 4'd12) begin // draw two
-                        draw_num_w = 3'b010;
-                        if(reversed_r) begin
-                            state_w = S_COM1;
-                            p0_draw2_w = 1'b0;
-                            p0_draw4_w = 1'b0;
-                            com1_draw2_w = 1'b1;
-                            com1_draw4_w = 1'b0;
-                        end
-                        else begin
-                            state_w = S_PLAYER;
-                            p0_draw2_w = 1'b1;
-                            p0_draw4_w = 1'b0;
-                            com1_draw2_w = 1'b0;
-                            com1_draw4_w = 1'b0;
-                        end
-                    end
-                    else if(last_card_r[3:0] == 4'd14) begin // wild draw four
-                        draw_num_w = 3'b100;
-                        if(reversed_r) begin
-                            state_w = S_COM1;
-                            p0_draw2_w = 1'b0;
-                            p0_draw4_w = 1'b0;
-                            com1_draw2_w = 1'b0;
-                            com1_draw4_w = 1'b1;
-                        end
-                        else begin
-                            state_w = S_PLAYER;
-                            p0_draw2_w = 1'b0;
-                            p0_draw4_w = 1'b1;
-                            com1_draw2_w = 1'b0;
-                            com1_draw4_w = 1'b0;
-                        end
-                    end
-                    else begin
-                        draw_num_w = 3'b000;
-                        state_w = (reversed_r)? S_COM1:S_PLAYER;
-                    end
+                    state_w = (p0_draw2_r || p0_draw4_r) ? S_PLAYER : S_COM1;
                 end
                 else begin
-                    draw_num_w = 3'b000;
                     state_w = S_COM2_BUFF;
                 end
             end
-            S_CAL: begin
-                
+            S_END: begin
+                finish = 1'b1;
+                if(!i_start)    state_w = S_IDLE;
+                else            state_w = S_END;
             end
         endcase
     end
@@ -807,6 +692,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
             com1_draw4_r <= 1'b0;
             com2_draw4_r <= 1'b0;
             last_card_r <= 6'd0;
+            reversed_r <= 1'b0;
         end
         else begin
             state_r <= state_w;
@@ -826,6 +712,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
             com1_draw4_r <= com1_draw4_w;
             com2_draw4_r <= com2_draw4_w;
             last_card_r <= last_card_w;
+            reversed_r <= reversed_w;
         end
     end
 endmodule
