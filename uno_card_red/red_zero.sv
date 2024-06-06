@@ -73,18 +73,20 @@ always_comb begin
             end
             2'b01: begin
                 r_data = 8'b11111111;
-                g_data = 8'b11111111;
+                if(picture[(y_cnt - y_pin)][(x_cnt - x_pin)])       g_data = 8'b11111111;
+                else                                                g_data = 8'b11000000;   
                 b_data = {8{picture[(y_cnt - y_pin)][(x_cnt - x_pin)]}};
             end
             2'b10: begin
                 r_data = {8{picture[(y_cnt - y_pin)][(x_cnt - x_pin)]}};
-                g_data = {8{picture[(y_cnt - y_pin)][(x_cnt - x_pin)]}};
-                b_data = 8'b11111111;
+                if(picture[(y_cnt - y_pin)][(x_cnt - x_pin)])       g_data = 8'b11111111;
+                else                                                g_data = 8'b10000000; 
+                b_data = {8{picture[(y_cnt - y_pin)][(x_cnt - x_pin)]}};
             end
             2'b11: begin
                 r_data = {8{picture[(y_cnt - y_pin)][(x_cnt - x_pin)]}};
-                g_data = 8'b11111111;
-                b_data = {8{picture[(y_cnt - y_pin)][(x_cnt - x_pin)]}};
+                g_data = {8{picture[(y_cnt - y_pin)][(x_cnt - x_pin)]}};
+                b_data = 8'b11111111;
             end
         endcase
 	end
