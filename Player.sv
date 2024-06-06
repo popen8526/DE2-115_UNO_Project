@@ -18,22 +18,23 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
     // states for current hand index
     localparam S_STAY = 2'b00, S_LEFT = 2'b01, S_RIGHT = 2'b10, S_COLOR = 2'b11;
     //----------------- sequential signal definition -----------------//
-    logic [5:0] red_hands_w [14:0];
-    logic [5:0] red_hands_r [14:0];
-    logic [5:0] blue_hands_w [14:0];
-    logic [5:0] blue_hands_r [14:0];
-    logic [5:0] green_hands_w [14:0];
-    logic [5:0] green_hands_r [14:0];
-    logic [5:0] yellow_hands_w [14:0];
-    logic [5:0] yellow_hands_r [14:0];
+    logic [5:0] red_hands_w [24:0];
+    logic [5:0] red_hands_r [24:0];
+    logic [5:0] blue_hands_w [24:0];
+    logic [5:0] blue_hands_r [24:0];
+    logic [5:0] green_hands_w [24:0];
+    logic [5:0] green_hands_r [24:0];
+    logic [5:0] yellow_hands_w [24:0];
+    logic [5:0] yellow_hands_r [24:0];
     logic [5:0] wild_hands_w [3:0];
     logic [5:0] wild_hands_r [3:0];
     logic [5:0] wildf_hands_w [3:0];
     logic [5:0] wildf_hands_r [3:0];
-    logic [5:0] hands_w [14:0];
-    logic [5:0] hands_r [14:0];
+    logic [5:0] hands_w [107:0];
+    logic [5:0] hands_r [107:0];
 
-    logic [3:0] red_num_w, red_num_r, blue_num_w, blue_num_r, green_num_w, green_num_r, yellow_num_w, yellow_num_r, wild_num_w, wild_num_r, wildf_num_w, wildf_num_r;
+    logic [4:0] red_num_w, red_num_r, blue_num_w, blue_num_r, green_num_w, green_num_r, yellow_num_w, yellow_num_r;
+    logic [1:0] wild_num_w, wild_num_r, wildf_num_w, wildf_num_r;
     logic [5:0] out_card_w, out_card_r;
     logic [3:0] state_w, state_r;
     logic       state_hands_w, state_hands_r;
@@ -392,7 +393,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                 for(j=0; j<wildf_num_r; j++) begin
                     hands_w[red_num_r + yellow_num_r + green_num_r + blue_num_r + wild_num_r + j] = wildf_hands_r[j];
                 end
-                for(j=red_num_r+yellow_num_r+green_num_r+blue_num_r+wild_num_r+wildf_num_r; j<15; j++) begin
+                for(j=red_num_r+yellow_num_r+green_num_r+blue_num_r+wild_num_r+wildf_num_r; j<108; j++) begin
                     hands_w[j] = 6'b111111;
                 end
                 state_hands_w = S_HOLD;
@@ -464,10 +465,10 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
             state_hands_r <= S_HOLD;
             state_index_r <= S_STAY;
             index_r <= 4'd0;
-            for(k = 0; k < 15; k = k + 1) begin
+            for(k = 0; k < 108; k = k + 1) begin
                 hands_r[k] <= 6'b111111;
             end
-            for(k = 0; k < 15; k = k + 1) begin
+            for(k = 0; k < 25; k = k + 1) begin
                 red_hands_r[k] <= 6'b111111;
                 blue_hands_r[k] <= 6'b111111;
                 green_hands_r[k] <= 6'b111111;
@@ -477,12 +478,12 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                 wild_hands_r[k] <= 6'b111111;
                 wildf_hands_r[k] <= 6'b111111;
             end
-            red_num_r <= 4'b0;
-            blue_num_r <= 4'b0;
-            green_num_r <= 4'b0;
-            yellow_num_r <= 4'b0;
-            wild_num_r <= 4'b0;
-            wildf_num_r <= 4'b0;
+            red_num_r <= 5'b0;
+            blue_num_r <= 5'b0;
+            green_num_r <= 5'b0;
+            yellow_num_r <= 5'b0;
+            wild_num_r <= 2'b0;
+            wildf_num_r <= 2'b0;
             draw_num_r <= 3'd0;
             out_card_r <= 6'b000000;
             iter_r <= 4'd0;
@@ -494,10 +495,10 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
             state_hands_r <= state_hands_w;
             state_index_r <= state_index_w;
             index_r <= index_w;
-            for(k = 0; k < 15; k = k + 1) begin
+            for(k = 0; k < 108; k = k + 1) begin
                 hands_r[k] <= hands_w[k];
             end
-            for(k = 0; k < 15; k = k + 1) begin
+            for(k = 0; k < 25; k = k + 1) begin
                 red_hands_r[k] <= red_hands_w[k];
                 blue_hands_r[k] <= blue_hands_w[k];
                 green_hands_r[k] <= green_hands_w[k];
