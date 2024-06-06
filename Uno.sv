@@ -1,6 +1,5 @@
-module Uno(i_clk, i_rst_n, i_start);
-    input i_clk, i_rst_n, i_start;
-
+module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select);
+    input i_clk, i_rst_n, i_start, i_left, i_right, i_select;
 
     localparam S_IDLE      = 4'd0;
     localparam S_SHUFFLE   = 4'd1;
@@ -39,7 +38,7 @@ module Uno(i_clk, i_rst_n, i_start);
     logic [ 5:0] p0_dcard, com0_dcard, com1_dcard, com2_dcard;
     logic        p0_play, com0_play, com1_play, com2_play;
     logic [ 5:0] last_card_w, last_card_r;
-
+    
     // combinational logic
     assign insert = (turn[1]) ? (turn[0] ? com2_play : com1_play) : (turn[0] ? com0_play : p0_play);
     assign in_card = (turn[1]) ? (turn[0] ? com2_pcard : com1_pcard) : (turn[0] ? com0_pcard : p0_pcard);
@@ -69,14 +68,20 @@ module Uno(i_clk, i_rst_n, i_start);
         .i_check(deck_idle),
         .i_prev_card(last_card_r),
         .o_out_card(p0_pcard),
-        .o_draw_card(p0_draw),
+        .o_draw(p0_draw),
         .i_drawn(card_drawn),
         // .skip(),
         .i_draw_two(p0_draw2_r),
         .i_draw_four(p0_draw4_r),
         .i_drawed_card(next_card),
-        .o_out(p0_play)
+        .o_out(p0_play),
+        .i_left(i_left),
+        .i_right(i_right),
+        .i_select(i_select),
+        .o_hands(),
+        .o_index()
     );
+
     Computer Com0(
         .i_clk(i_clk),
         .i_rst_n(i_rst_n),
@@ -94,6 +99,7 @@ module Uno(i_clk, i_rst_n, i_start);
         .i_drawed_card(next_card),
         .o_out(com0_play)
     );
+
     Computer Com1(
         .i_clk(i_clk),
         .i_rst_n(i_rst_n),
@@ -111,6 +117,7 @@ module Uno(i_clk, i_rst_n, i_start);
         .i_drawed_card(next_card),
         .o_out(com1_play)
     );
+
     Computer Com2(
         .i_clk(i_clk),
         .i_rst_n(i_rst_n),
