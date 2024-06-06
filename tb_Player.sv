@@ -19,7 +19,7 @@ module tb;
     logic        card_drawn;
     logic [ 5:0] next_card;
     logic        p0_full;
-    logic [ 6:0] p0_hands [14:0];
+    logic [ 5:0] p0_hands [14:0];
     logic [ 3:0] index;
 	integer i, j;
 
