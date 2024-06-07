@@ -10,8 +10,8 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
     output [10:0] o_score;
     output [3:0] o_state;
     //----------------- fsm state definition -----------------//
-    localparam S_IDLE = 4'b000, S_DRAW = 4'b001, S_OUT = 4'b010, S_DRAW_BUFF = 4'b011, S_CHECK_COLOR = 4'b100, S_CHECK_NUM = 4'b101, S_INIT = 4'b110, S_CHOOSE = 4'b111;
-    localparam S_NOCARD = 4'b1000, S_CHECK = 4'b1001, S_BUFFER = 4'b1010;
+    localparam S_IDLE = 4'b000, S_DRAW = 4'b001, S_OUT = 4'b010, S_NOCARD = 4'b011, S_CHECK_COLOR = 4'b100, S_CHECK_NUM = 4'b101, S_CHECK = 4'b110, S_CHOOSE = 4'b111;
+    localparam S_DRAW_R = 4'b1000, S_DRAW_Y = 4'b1001, S_DRAW_G = 4'b1010, S_DRAW_B = 4'b1011, S_NOCARD_R = 4'b1100, S_NOCARD_Y = 4'b1101, S_NOCARD_G = 4'b1110, S_NOCARD_B = 4'b1111;
     //----------------- sequential signal definition -----------------//
     // first dimension : 0-red, 1-yellow, 2-green, 3-blue, 4-wild, 5-wild draw four
     // second dimension : card num/function
@@ -96,32 +96,54 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 out = 1'b0;
                 draw_card = 1'b0;
                 if(i_drawn) begin
-                    hand_num_w = hand_num_r + 1;
-                    if(iter_r <= 1) begin
-                        if(i_start) begin
-                            state_w = S_CHECK_COLOR;
-                            iter_w = 3'd0;
-                        end
-                        else begin
-                            state_w = S_IDLE;
-                            iter_w = 3'd0;
-                        end
-                    end
-                    else begin
-                        state_w = S_DRAW;
-                        iter_w = iter_r - 1;
-                    end
                     if(i_drawed_card[3:0] == 4'b1101) begin // if the card is wild
                         hands_w[4][0] = hands_r[4][0] + 1;
                         score_w = score_r + 50;
+                        hand_num_w = hand_num_r + 1;
+                        if(iter_r <= 1) begin
+                            if(i_start) begin
+                                state_w = S_CHECK_COLOR;
+                                iter_w = 3'd0;
+                            end
+                            else begin
+                                state_w = S_IDLE;
+                                iter_w = 3'd0;
+                            end
+                        end
+                        else begin
+                            state_w = S_DRAW;
+                            iter_w = iter_r - 1;
+                        end
                     end
                     else if (i_drawed_card[3:0] == 4'b1110) begin // if the card is wild draw four
                         hands_w[5][0] = hands_r[5][0] + 1;
                         score_w = score_r + 50;
+                        hand_num_w = hand_num_r + 1;
+                        if(iter_r <= 1) begin
+                            if(i_start) begin
+                                state_w = S_CHECK_COLOR;
+                                iter_w = 3'd0;
+                            end
+                            else begin
+                                state_w = S_IDLE;
+                                iter_w = 3'd0;
+                            end
+                        end
+                        else begin
+                            state_w = S_DRAW;
+                            iter_w = iter_r - 1;
+                        end
                     end
                     else begin
-                        hands_w[i_drawed_card[5:4]][i_drawed_card[3:0]] = (hands_r[i_drawed_card[5:4]][i_drawed_card[3:0]][0]) ? 2'b11 : 2'b01;
-                        score_w = score_r + ((i_drawed_card[3:0] >= 4'd10) ? (20) : (i_drawed_card[3:0]));
+                        score_w = score_r;
+                        iter_w = iter_r;
+                        hand_num_w = hand_num_r;
+                        case (i_drawed_card[5:4])
+                            2'b00:  state_w = S_DRAW_R;
+                            2'b01:  state_w = S_DRAW_Y;
+                            2'b10:  state_w = S_DRAW_G;
+                            2'b11:  state_w = S_DRAW_B;
+                        endcase
                     end
                 end
                 else begin
@@ -130,6 +152,94 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                     iter_w = iter_r;
                     score_w = score_r;
                 end
+            end
+            S_DRAW_R: begin
+                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                out = 1'b0;
+                draw_card = 1'b0;
+                if(iter_r <= 1) begin
+                    if(i_start) begin
+                        state_w = S_CHECK_COLOR;
+                        iter_w = 3'd0;
+                    end
+                    else begin
+                        state_w = S_IDLE;
+                        iter_w = 3'd0;
+                    end
+                end
+                else begin
+                    state_w = S_DRAW;
+                    iter_w = iter_r - 1;
+                end
+                hands_w[0][i_drawed_card[3:0]] = (hands_r[0][i_drawed_card[3:0]][0]) ? 2'b11 : 2'b01;
+                score_w = score_r + ((i_drawed_card[3:0] >= 4'd10) ? (20) : (i_drawed_card[3:0]));
+                hand_num_w = hand_num_r + 1;
+            end
+            S_DRAW_Y: begin
+                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                out = 1'b0;
+                draw_card = 1'b0;
+                if(iter_r <= 1) begin
+                    if(i_start) begin
+                        state_w = S_CHECK_COLOR;
+                        iter_w = 3'd0;
+                    end
+                    else begin
+                        state_w = S_IDLE;
+                        iter_w = 3'd0;
+                    end
+                end
+                else begin
+                    state_w = S_DRAW;
+                    iter_w = iter_r - 1;
+                end
+                hands_w[1][i_drawed_card[3:0]] = (hands_r[1][i_drawed_card[3:0]][0]) ? 2'b11 : 2'b01;
+                score_w = score_r + ((i_drawed_card[3:0] >= 4'd10) ? (20) : (i_drawed_card[3:0]));
+                hand_num_w = hand_num_r + 1;
+            end
+            S_DRAW_G: begin
+                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                out = 1'b0;
+                draw_card = 1'b0;
+                if(iter_r <= 1) begin
+                    if(i_start) begin
+                        state_w = S_CHECK_COLOR;
+                        iter_w = 3'd0;
+                    end
+                    else begin
+                        state_w = S_IDLE;
+                        iter_w = 3'd0;
+                    end
+                end
+                else begin
+                    state_w = S_DRAW;
+                    iter_w = iter_r - 1;
+                end
+                hands_w[2][i_drawed_card[3:0]] = (hands_r[2][i_drawed_card[3:0]][0]) ? 2'b11 : 2'b01;
+                score_w = score_r + ((i_drawed_card[3:0] >= 4'd10) ? (20) : (i_drawed_card[3:0]));
+                hand_num_w = hand_num_r + 1;
+            end
+            S_DRAW_B: begin
+                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                out = 1'b0;
+                draw_card = 1'b0;
+                if(iter_r <= 1) begin
+                    if(i_start) begin
+                        state_w = S_CHECK_COLOR;
+                        iter_w = 3'd0;
+                    end
+                    else begin
+                        state_w = S_IDLE;
+                        iter_w = 3'd0;
+                    end
+                end
+                else begin
+                    state_w = S_DRAW;
+                    iter_w = iter_r - 1;
+                end
+                hands_w[3][i_drawed_card[3:0]] = (hands_r[3][i_drawed_card[3:0]][0]) ? 2'b11 : 2'b01;
+                score_w = score_r + ((i_drawed_card[3:0] >= 4'd10) ? (20) : (i_drawed_card[3:0]));
+                hand_num_w = hand_num_r + 1;
             end
             S_OUT: begin
                 counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
@@ -452,19 +562,27 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 // if(1'b1) begin // counter_r[27]
                     draw_card = 1'b1;
                     if(i_drawn) begin
-                        state_w = S_CHECK;
-                        hand_num_w = hand_num_r + 1;
                         if(i_drawed_card[3:0] == 4'b1101) begin // if the card is wild
                             hands_w[4][0] = hands_r[4][0] + 1;
                             score_w = score_r + 50;
+                            hand_num_w = hand_num_r + 1;
+                            state_w = S_CHECK;
                         end
                         else if (i_drawed_card[3:0] == 4'b1110) begin // if the card is wild draw four
                             hands_w[5][0] = hands_r[5][0] + 1;
                             score_w = score_r + 50;
+                            hand_num_w = hand_num_r + 1;
+                            state_w = S_CHECK;
                         end
                         else begin
-                            hands_w[i_drawed_card[5:4]][i_drawed_card[3:0]] = (hands_r[i_drawed_card[5:4]][i_drawed_card[3:0]][0]) ? 2'b11 : 2'b01;
-                            score_w = score_r + ((i_drawed_card[3:0] >= 4'd10) ? (20) : (i_drawed_card[3:0]));
+                            score_w = score_r;
+                            hand_num_w = hand_num_r;
+                            case (i_drawed_card[5:4])
+                                2'b00:  state_w = S_DRAW_R;
+                                2'b01:  state_w = S_DRAW_Y;
+                                2'b10:  state_w = S_DRAW_G;
+                                2'b11:  state_w = S_DRAW_B;
+                            endcase
                         end
                     end
                     else begin
@@ -479,6 +597,42 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 //     hand_num_w = hand_num_r;
                 //     score_w = score_r;
                 // end
+            end
+            S_NOCARD_R: begin
+                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                out = 1'b0;
+                draw_card = 1'b0;
+                state_w = S_CHECK;
+                hands_w[0][i_drawed_card[3:0]] = (hands_r[0][i_drawed_card[3:0]][0]) ? 2'b11 : 2'b01;
+                score_w = score_r + ((i_drawed_card[3:0] >= 4'd10) ? (20) : (i_drawed_card[3:0]));
+                hand_num_w = hand_num_r + 1;
+            end
+            S_NOCARD_Y: begin
+                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                out = 1'b0;
+                draw_card = 1'b0;
+                state_w = S_CHECK;
+                hands_w[1][i_drawed_card[3:0]] = (hands_r[1][i_drawed_card[3:0]][0]) ? 2'b11 : 2'b01;
+                score_w = score_r + ((i_drawed_card[3:0] >= 4'd10) ? (20) : (i_drawed_card[3:0]));
+                hand_num_w = hand_num_r + 1;
+            end
+            S_NOCARD_G: begin
+                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                out = 1'b0;
+                draw_card = 1'b0;
+                state_w = S_CHECK;
+                hands_w[2][i_drawed_card[3:0]] = (hands_r[2][i_drawed_card[3:0]][0]) ? 2'b11 : 2'b01;
+                score_w = score_r + ((i_drawed_card[3:0] >= 4'd10) ? (20) : (i_drawed_card[3:0]));
+                hand_num_w = hand_num_r + 1;
+            end
+            S_NOCARD_B: begin
+                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                out = 1'b0;
+                draw_card = 1'b0;
+                state_w = S_CHECK;
+                hands_w[3][i_drawed_card[3:0]] = (hands_r[3][i_drawed_card[3:0]][0]) ? 2'b11 : 2'b01;
+                score_w = score_r + ((i_drawed_card[3:0] >= 4'd10) ? (20) : (i_drawed_card[3:0]));
+                hand_num_w = hand_num_r + 1;
             end
             S_CHECK: begin
                 counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
