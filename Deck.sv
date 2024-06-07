@@ -3,13 +3,14 @@
 // 0: red, 1: yellow, 2: green, 3: blue
 // 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9
 // 10: skip, 11: reverse, 12: draw two, 13: wild, 14: wild draw four
-module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_drawn, o_card); 
+module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_drawn, o_card, o_state_1, o_state_2); 
     //----------------- port definition -----------------//
     input        i_clk, i_rst_n, i_start, i_insert;
     // output [5:0] o_Deck [107:0]; // No need to output the whole deck
     input  [2:0] i_draw; // 100: draw four, 010 draw two, 001: draw one
     output       o_done, o_drawn;
     output [5:0] o_card;
+    output [2:0] o_state_1, o_state_2;
     input  [5:0] i_prev_card;
     //----------------- fsm state definition -----------------//
     localparam  S_IDLE_1 = 3'b000, S_SHUFFLE_1 = 3'b001, S_INSERT_1 = 3'b011, S_INIT_1 = 3'b100, S_WAIT_DRAW_1 = 3'b101, S_DRAW_1 = 3'b110;
@@ -34,6 +35,8 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
     assign draw = (draw_r[0] || draw_r[1] || draw_r[2]);
     assign o_drawn = in_use_r ? drawn_1 : drawn_2;
     assign o_card = in_use_r ? Deck_1_r[end_index_1_r] : Deck_2_r[end_index_2_r]; // always output the last card in the deck, when o_drawn is high, the last card is drawn.
+    assign o_state_1 = state_1_r;
+    assign o_state_2 = state_2_r;
     //----------------- combinational part for draw -----------------//
     always_comb begin
         if(state_1_r == S_WAIT_DRAW_1 && end_index_1_r == 0) begin
@@ -62,6 +65,9 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
         // state_1_w = state_1_r;
         end_index_1_w = end_index_1_r;
         drawn_1 = 1'b0;
+        for (int i = 0; i < 108; i++) begin
+            Deck_1_w[i] = Deck_1_r[i];
+        end
         case(state_1_r)
             S_INIT_1: begin
                 state_1_w = S_IDLE_1;
@@ -183,8 +189,9 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
                     state_1_w = S_SHUFFLE_1;
                 end
                 else if (!in_use_r) begin // if the deck is not in use, i_rst_n the deck
-                    for (int i = end_index_1_r; i < 108; i++) begin
-                        Deck_1_w[i] = 0;
+                    for (int i = 0; i < 108; i++) begin
+                        if(end_index_1_r >= i)  Deck_1_w[i] = 0;
+                        else                    Deck_1_w[i] = Deck_1_r[i];
                     end
                     end_index_1_w = end_index_1_r;
                     state_1_w = (i_insert) ? S_INSERT_1 : S_IDLE_1;
@@ -248,11 +255,15 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
         state_2_w = state_2_r;
         end_index_2_w = end_index_2_r;
         drawn_2 = 1'b0;
+        for(int i = 0; i < 108; i++) begin
+            Deck_2_w[i] = Deck_2_r[i];
+        end
         case(state_2_r) 
             S_IDLE_2: begin
                 if (in_use_r) begin // in_use_r is high, the deck_2 is not in use
-                    for (int i = end_index_2_r; i < 108; i++) begin
-                        Deck_2_w[i] = 0;
+                    for (int i = 0; i < 108; i++) begin
+                        if(end_index_2_r >= i)  Deck_2_w[i] = 0;
+                        else                    Deck_2_w[i] = Deck_2_r[i];
                     end
                     end_index_2_w = end_index_2_r;
                     state_2_w = (i_insert) ? S_INSERT_2 : S_IDLE_2;

@@ -9,6 +9,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
     output [ 3:0] o_player_state, o_com0_state, o_com1_state, o_com2_state, o_deck_state_1, o_deck_state_2;
 
 
+
     localparam S_IDLE      = 4'd0;
     localparam S_SHUFFLE   = 4'd1;
     localparam S_PLAYER    = 4'd2;
@@ -56,8 +57,8 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
     logic [3:0]  deck_state_2;
 
     assign deck_state_1[3] = 1'b0;
-
     assign deck_state_2[3] = 1'b0;
+
     
     // combinational logic
     assign insert = ((p0_turn && p0_play) || (com0_turn && com0_play) || (com1_turn && com1_play) || (com2_turn && com2_play));
