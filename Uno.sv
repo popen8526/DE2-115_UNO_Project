@@ -5,9 +5,8 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
     output [ 6:0] o_index;
     output [ 5:0] o_hands [107:0];
     output        o_end;
-    output [ 6:0] o_last_card;
+    output [ 5:0] o_last_card;
     output [ 3:0] o_player_state, o_com0_state, o_com1_state, o_com2_state, o_deck_state_1, o_deck_state_2;
-
 
 
     localparam S_IDLE      = 4'd0;
@@ -57,8 +56,8 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
     logic [3:0]  deck_state_2;
 
     assign deck_state_1[3] = 1'b0;
-    assign deck_state_2[3] = 1'b0;
 
+    assign deck_state_2[3] = 1'b0;
     
     // combinational logic
     assign insert = ((p0_turn && p0_play) || (com0_turn && com0_play) || (com1_turn && com1_play) || (com2_turn && com2_play));
@@ -287,10 +286,15 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
             S_COM2_INIT: begin
                 finish = 1'b0;
                 if(draw_count_r >= 5'd28) begin
-                    draw_count_w = 0;
                     draw_num_w = 3'b000;
-                    if(deck_idle)   state_w = S_PLAYER;
-                    else            state_w = S_COM2_INIT;
+                    if(deck_idle) begin
+                        state_w = S_PLAYER;
+                        draw_count_w = 0;
+                    end
+                    else begin
+                        state_w = S_COM2_INIT;
+                        draw_count_w = draw_count_r;
+                    end
                 end
                 else begin
                     state_w = S_COM2_INIT;
