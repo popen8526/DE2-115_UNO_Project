@@ -155,6 +155,7 @@ logic [10:0] score [3:0];
 logic [1:0] color_w, color_r;
 logic [5:0] prev_card_w, prev_card_r;
 logic [6:0] index_w, index_r;
+logic [7:0] local_index;
 // logic [6:0] hands_num_w [3:0];
 // logic [6:0] hands_num_r [3:0];
 
@@ -207,7 +208,8 @@ Display display_instance (
     .VGA_HS(VGA_HS),
     .VGA_R(VGA_R),
     .VGA_SYNC_N(VGA_SYNC_N),
-    .VGA_VS(VGA_VS)
+    .VGA_VS(VGA_VS),
+	.o_local_index(local_index)
 );
 
 // Uno uno_instance (
@@ -259,11 +261,11 @@ always_comb begin
 	hands_num[2] = 0;
 	hands_num[3] = 0;
 	select_color = ((prev_card_r[3:0] == 4'b1110) || (prev_card_r[3:0] == 4'b1101)) ? 1'b1 : 1'b0;
-	for(int i=0; i<10; i=i+1) begin
+	for(int i=0; i<20; i=i+1) begin
 		hands_w[i] = i;
 	end
-	for(int i=10; i<108; i=i+1) begin
-		hands_w[i] = 6'b111111;
+	for(int j=20; j<107; j=j+1) begin
+		hands_w[j] = 6'b111111;
 	end
 	hands_w[108] = 6'b001111;
 	if(key2down) begin
@@ -273,38 +275,38 @@ always_comb begin
 		prev_card_w = prev_card_r;
 	end
 	if(key1down) begin
-		index_w = (index_r == 10'd108) ? 10'd0 :(index_r == 10'd9) ? 10'd108 : (index_r + 1);
+		index_w = (index_r == 10'd108) ? 10'd0 :(index_r == 10'd19) ? 10'd108 : (index_r + 1);
 	end
 	else if(key3down) begin
-		index_w = (index_r == 10'd108) ? 10'd10 :(index_r == 10'd0) ? 10'd108 : (index_r - 1);
+		index_w = (index_r == 10'd108) ? 10'd19 :(index_r == 10'd0) ? 10'd108 : (index_r - 1);
 	end
 	else begin
 		index_w = index_r;
 	end
 end
-always_ff @(posedge i_clk_25M or negedge i_rst_n) begin
+always_ff @(posedge i_clk_1M or negedge i_rst_n) begin
 	if(~i_rst_n) begin
-		for(int i=0; i<108; i=i+1) begin
-			hands_r[i] = 0;
+		for(int k=0; k<109; k=k+1) begin
+			hands_r[k] <= 0;
 		end
-		prev_card_r = 6'b0;
-		index_r = 10'b0;
+		prev_card_r <= 6'b0;
+		index_r <= 10'b0;
 	end
 	else begin
-		for(int i=0; i<108; i=i+1) begin
-			hands_r[i] = hands_w[i];
+		for(int l=0; l<109; l=l+1) begin
+			hands_r[l] <= hands_w[l];
 		end
-		prev_card_r = prev_card_w;
-		index_r = index_w;
+		prev_card_r <= prev_card_w;
+		index_r <= index_w;
 	end
 end
 SevenHexDecoder seven_dec0(
-.i_hex(deck_state_1),
+.i_hex(index_r[3:0]),
 .o_seven_ten(HEX1),
 .o_seven_one(HEX0)
 );
 SevenHexDecoder seven_dec1(
-.i_hex(deck_state_2),
+.i_hex(local_index[3:0]),
 .o_seven_ten(HEX3),
 .o_seven_one(HEX2)
 );
