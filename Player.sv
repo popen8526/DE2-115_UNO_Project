@@ -423,7 +423,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
         endcase
     end
     always_comb begin
-        for(i = 0; i < 108; i = i + 1) begin
+        for(j = 0; j < 108; j = j + 1) begin
             hands_w[i] = hands_r[i];
         end
         case (state_hands_r)
