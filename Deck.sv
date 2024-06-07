@@ -191,10 +191,10 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
             end
             S_IDLE_1: begin
                 if (!in_use_r) begin // if the deck is not in use, i_rst_n the deck
-                    for (int i = 0; i < 108; i++) begin
-                        if(end_index_1_r >= i)  Deck_1_w[i] = 0;
-                        else                    Deck_1_w[i] = Deck_1_r[i];
-                    end
+                    // for (int i = 0; i < 108; i++) begin
+                    //     if(end_index_1_r >= i)  Deck_1_w[i] = 0;
+                    //     else                    Deck_1_w[i] = Deck_1_r[i];
+                    // end
                     end_index_1_w = end_index_1_r;
                     state_1_w = (i_insert) ? S_INSERT_1 : S_IDLE_1;
                 end
@@ -263,10 +263,10 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
         case(state_2_r) 
             S_IDLE_2: begin
                 if (in_use_r) begin // in_use_r is high, the deck_2 is not in use
-                    for (int i = 0; i < 108; i++) begin
-                        if(end_index_2_r >= i)  Deck_2_w[i] = 0;
-                        else                    Deck_2_w[i] = Deck_2_r[i];
-                    end
+                    // for (int i = 0; i < 108; i++) begin
+                    //     if(end_index_2_r <= i)  Deck_2_w[i] = 0;
+                    //     else                    Deck_2_w[i] = Deck_2_r[i];
+                    // end
                     end_index_2_w = end_index_2_r;
                     state_2_w = (i_insert) ? S_INSERT_2 : S_IDLE_2;
                 end
@@ -429,7 +429,6 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
             Deck_1_r[106] = {2'b11, 4'b1101}; // blue wild
             Deck_1_r[107] = {2'b11, 4'b1110}; // blue wild draw four
             for (int i = 0; i < 108; i++) begin
-                Deck_1_r[i] <= 0;
                 Deck_2_r[i] <= 0;
             end
             counter_r <= 0;
