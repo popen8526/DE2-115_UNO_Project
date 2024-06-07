@@ -1,10 +1,11 @@
-module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_score, o_index, o_hands, o_end);
+module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_score, o_index, o_hands, o_end, o_last_card);
     input i_clk, i_rst_n, i_start, i_left, i_right, i_select;
     output [ 6:0] o_hand_num [3:0];
     output [10:0] o_score [3:0];
     output [ 6:0] o_index;
     output [ 5:0] o_hands [107:0];
     output        o_end;
+    output [ 6:0] o_last_card;
 
 
     localparam S_IDLE      = 4'd0;
@@ -54,7 +55,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
     assign com1_turn = ((state_r == S_COM1) || (state_r == S_COM1_BUFF));
     assign com2_turn = ((state_r == S_COM2) || (state_r == S_COM2_BUFF));
     assign o_end = finish;
-
+    assign o_last_card = last_card_r;
     Deck Deck(
         .i_clk(i_clk),
         .i_rst_n(i_rst_n),

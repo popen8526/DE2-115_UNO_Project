@@ -136,17 +136,43 @@ module DE2_115 (
 	inout [6:0] EX_IO
 );
 
-wire i_clk_25M;
+wire i_clk_25M, i_clk_1M;
 wire i_rst_n = KEY[0];
 // TODO: Using Qsys to generate PLL to create "i_clk_25M"
 audio audio_inst (
     .altpll_1_c0_clk(i_clk_25M), // Connect the output clock
     .altpll_1_inclk_interface_clk(CLOCK_50),
     .altpll_1_inclk_interface_reset_reset(i_rst_n),
+	 .altpll_0_c0_clk(i_clk_1M),                      //                    altpll_0_c0.clk
+	 .altpll_0_inclk_interface_clk(CLOCK_50),         //       altpll_0_inclk_interface.clk
+	 .altpll_0_inclk_interface_reset_reset(i_rst_n),
 );
+
+// logic [5:0] hands_w [108:0];
+// logic [5:0] hands_r [108:0];
+// logic [6:0] hands_num [3:0];
+// logic [10:0] score [3:0];
+// logic [1:0] color_w, color_r;
+// logic [5:0] prev_card_w, prev_card_r;
+// logic [6:0] index_w, index_r;
+
+logic [5:0] hands [108:0];
+logic [6:0] hands_num [3:0];
+logic [10:0] score [3:0];
+logic [5:0] prev_card;
+logic [6:0] index;
+logic finished, select_color;
+assign select_color = ((prev_card[3:0] == 4'b1110) || (prev_card[3:0] == 4'b1101)) ? 1'b1 : 1'b0;
+assign hands[0] = 6'b001111;
 Display display_instance (
     .i_rst_n(i_rst_n),
     .i_clk_25M(i_clk_25M),
+	.i_hands(hands),
+	.i_index(index+1),
+	.i_prev_card(prev_card),
+	.i_finished(finished),
+	.i_hands_num(hands_num),
+	.i_select_color(select_color),
     .VGA_B(VGA_B),
     .VGA_BLANK_N(VGA_BLANK_N),
     .VGA_CLK(VGA_CLK),
@@ -157,4 +183,77 @@ Display display_instance (
     .VGA_VS(VGA_VS)
 );
 
+Uno uno_instance (
+	.i_clk(i_clk_1M),
+	.i_rst_n(i_rst_n),
+	.i_start(SW[0]),
+	.i_left(key3down),
+	.i_right(key1down),
+	.i_select(key2down),
+	.o_hand_num(hands_num),
+	.o_score(score),
+	.o_index(index),
+	.o_last_card(prev_card),
+	.o_hands(hands[108:1]),
+	.o_end(finished)
+);
+
+logic key1down, key2down, key3down;
+
+Debounce deb1(
+	.i_in(KEY[1]), // LEFT
+	.i_rst_n(i_rst_n),
+	.i_clk(i_clk_1M),
+	.o_neg(key1down) 
+);
+
+Debounce deb2(
+	.i_in(KEY[2]), // PLAY
+	.i_rst_n(i_rst_n),
+	.i_clk(i_clk_1M),
+	.o_neg(key2down) 
+);
+
+Debounce deb3(
+	.i_in(KEY[3]), // RIGHT
+	.i_rst_n(i_rst_n),
+	.i_clk(i_clk_1M),
+	.o_neg(key3down)
+);
+// always_comb begin
+// 	for(int i=0; i<108; i=i+1) begin
+// 		hands_w[i] = i;
+// 	end
+// 	if(key2down) begin
+// 		prev_card_w = prev_card_r + 1;
+// 	end
+// 	else begin
+// 		prev_card_w = prev_card_r;
+// 	end
+// 	if(key1down) begin
+// 		index_w = (index_r + 1 > 10'd107) ? 10'd0 : (index_r + 1);
+// 	end
+// 	else if(key3down) begin
+// 		index_w = (index_r - 1 < 0) ? 10'd107 : (index_r - 1);
+// 	end
+// 	else begin
+// 		index_w = index_r;
+// 	end
+// end
+// always_ff @(posedge i_clk_25M or negedge i_rst_n) begin
+// 	if(~i_rst_n) begin
+// 		for(int i=0; i<108; i=i+1) begin
+// 			hands_r[i] = 0;
+// 		end
+// 		prev_card_r = 6'b0;
+// 		index_r = 10'b0;
+// 	end
+// 	else begin
+// 		for(int i=0; i<108; i=i+1) begin
+// 			hands_r[i] = hands_w[i];
+// 		end
+// 		prev_card_r = prev_card_w;
+// 		index_r = index_w;
+// 	end
+// end
 endmodule

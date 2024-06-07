@@ -1,4 +1,4 @@
-module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw_card, i_draw_two, i_draw_four, i_drawn, i_check, i_drawed_card, o_out, o_hand_num, o_score, o_state);
+module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw_card, i_draw_two, i_draw_four, i_drawn, i_check, i_drawed_card, o_out, o_hand_num, o_score);
     //----------------- port definition -----------------//
     input i_clk, i_rst_n, i_init, i_start, i_draw_two, i_draw_four, i_drawn, i_check;
     input [5:0] i_prev_card;
@@ -8,7 +8,6 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
     input [5:0] i_drawed_card; // the card that the player drawed
     output [6:0] o_hand_num;
     output [10:0] o_score;
-    output [3:0] o_state;
     //----------------- fsm state definition -----------------//
     localparam S_IDLE = 4'b000, S_DRAW = 4'b001, S_OUT = 4'b010, S_DRAW_BUFF = 4'b011, S_CHECK_COLOR = 4'b100, S_CHECK_NUM = 4'b101, S_INIT = 4'b110, S_CHOOSE = 4'b111;
     localparam S_NOCARD = 4'b1000, S_CHECK = 4'b1001, S_BUFFER = 4'b1010;
@@ -39,10 +38,9 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
     assign blue_exist = (hands_r[3][0][0] || hands_r[3][1][0] || hands_r[3][2][0] || hands_r[3][3][0] || hands_r[3][4][0] || hands_r[3][5][0] || hands_r[3][6][0] || hands_r[3][7][0] || hands_r[3][8][0] || hands_r[3][9][0] || hands_r[3][10][0] || hands_r[3][11][0] || hands_r[3][12][0]);
     assign wild_exist = (hands_r[4][0][0] || hands_r[4][0][1]);
     assign wild4_exist = (hands_r[5][0][0] || hands_r[5][0][1]);
-    assign o_state = state_r; // debug
     genvar x;
     generate
-        for(x=0; x<13; x++) begin : QQ_1
+        for(x=0; x<13; x++) begin
             assign number_exist[x] = (hands_r[0][x][0] || hands_r[1][x][0] || hands_r[2][x][0] || hands_r[3][x][0]);
         end
     endgenerate
@@ -133,8 +131,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
             S_OUT: begin
                 counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
                 draw_card = 1'b0;
-                // out = counter_r[27];
-                out = 1'b1;
+                out = counter_r[27];
                 if(i_check) begin
                     // out = 1'b1; // play the card
                     state_w = S_IDLE;
@@ -166,7 +163,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                                     out_card_w = {2'b00, lfsr_r[3:0]};
                                     hands_w[0][lfsr_r] = (hands_r[0][lfsr_r][1]) ? 2'b01 : 2'b00;
                                     hand_num_w = hand_num_r - 1;
-                                    score_w = score_r - ((lfsr_r[3:0] >= 4'd10) ? (20) : (lfsr_r[3:0]));
+                                    score_w = score_r - ((lfsr[3:0] >= 4'd10) ? (20) : (lfsr[3:0]));
                                 end
                                 else begin
                                     state_w = S_CHECK_COLOR;
@@ -197,7 +194,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                                     out_card_w = {2'b01, lfsr_r[3:0]};
                                     hands_w[1][lfsr_r] = (hands_r[1][lfsr_r][1]) ? 2'b01 : 2'b00;
                                     hand_num_w = hand_num_r - 1;
-                                    score_w = score_r - ((lfsr_r[3:0] >= 4'd10) ? (20) : (lfsr_r[3:0]));
+                                    score_w = score_r - ((lfsr[3:0] >= 4'd10) ? (20) : (lfsr[3:0]));
                                 end
                                 else begin
                                     state_w = S_CHECK_COLOR;
@@ -228,7 +225,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                                     out_card_w = {2'b10, lfsr_r[3:0]};
                                     hands_w[2][lfsr_r] = (hands_r[2][lfsr_r][1]) ? 2'b01 : 2'b00;
                                     hand_num_w = hand_num_r - 1;
-                                    score_w = score_r - ((lfsr_r[3:0] >= 4'd10) ? (20) : (lfsr_r[3:0]));
+                                    score_w = score_r - ((lfsr[3:0] >= 4'd10) ? (20) : (lfsr[3:0]));
                                 end
                                 else begin
                                     state_w = S_CHECK_COLOR;
@@ -259,7 +256,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                                     out_card_w = {2'b11, lfsr_r[3:0]};
                                     hands_w[3][lfsr_r] = (hands_r[3][lfsr_r][1]) ? 2'b01 : 2'b00;
                                     hand_num_w = hand_num_r - 1;
-                                    score_w = score_r - ((lfsr_r[3:0] >= 4'd10) ? (20) : (lfsr_r[3:0]));
+                                    score_w = score_r - ((lfsr[3:0] >= 4'd10) ? (20) : (lfsr[3:0]));
                                 end
                                 else begin
                                     state_w = S_CHECK_COLOR;
@@ -448,7 +445,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
             S_NOCARD: begin
                 counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
-                if(1'b1) begin // counter_r[27]
+                if(counter_r[27]) begin
                     draw_card = 1'b1;
                     if(i_drawn) begin
                         state_w = S_CHECK;
@@ -515,7 +512,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
             out_card_r <= out_card_w;
             lfsr_r <= lfsr_w;
             counter_r <= counter_w;
-            hand_num_r <= hand_num_w;
+            hand_num_r <= had_num_w;
             score_r <= score_w;
         end
     end
