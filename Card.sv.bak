@@ -12,6 +12,7 @@ module Card(
 );
     localparam X_WIDTH = 30;
     localparam Y_WIDTH = 50;
+    logic [5:0] x_index, y_index; // given to the image in order to determine the pixel.
     assign y_index = y_cnt - y_pin;
     always_comb begin
         if((x_pin <= x_cnt && x_cnt <= x_pin + X_WIDTH) && (y_pin <= y_cnt && y_cnt <= y_pin + Y_WIDTH)) begin

@@ -92,7 +92,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 end
             end
             S_DRAW: begin
-                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                counter_w = (counter_r[20]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
                 draw_card = 1'b0;
                 if(i_drawn) begin
@@ -154,7 +154,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 end
             end
             S_DRAW_R: begin
-                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                counter_w = (counter_r[20]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
                 draw_card = 1'b0;
                 if(iter_r <= 1) begin
@@ -176,7 +176,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 hand_num_w = hand_num_r + 1;
             end
             S_DRAW_Y: begin
-                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                counter_w = (counter_r[20]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
                 draw_card = 1'b0;
                 if(iter_r <= 1) begin
@@ -198,7 +198,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 hand_num_w = hand_num_r + 1;
             end
             S_DRAW_G: begin
-                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                counter_w = (counter_r[20]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
                 draw_card = 1'b0;
                 if(iter_r <= 1) begin
@@ -220,7 +220,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 hand_num_w = hand_num_r + 1;
             end
             S_DRAW_B: begin
-                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                counter_w = (counter_r[20]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
                 draw_card = 1'b0;
                 if(iter_r <= 1) begin
@@ -242,10 +242,10 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 hand_num_w = hand_num_r + 1;
             end
             S_OUT: begin
-                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                counter_w = (counter_r[20]) ? counter_r : (counter_r + 1);
                 draw_card = 1'b0;
-                // out = counter_r[27];
-                out = 1'b1;
+                out = counter_r[20];
+                // out = 1'b1;
                 if(i_check) begin
                     // out = 1'b1; // play the card
                     state_w = S_IDLE;
@@ -258,7 +258,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 end
             end
             S_CHECK_COLOR: begin
-                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                counter_w = (counter_r[20]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
                 iter_w = 3'd0;
                 draw_card = 1'b0;
@@ -390,7 +390,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 endcase
             end
             S_CHECK_NUM: begin
-                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                counter_w = (counter_r[20]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
                 draw_card = 1'b0;
                 if(i_prev_card[3:0] == 4'd13 || i_prev_card[3:0] == 4'd14) begin // prev card is wild - can only play wild if no color card
@@ -486,7 +486,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 end
             end
             S_CHOOSE: begin // choose random color when played wild card
-                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                counter_w = (counter_r[20]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
                 draw_card = 1'b0;
                 if(lfsr_r[1:0] != i_prev_card[5:4]) begin
@@ -557,9 +557,9 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 end
             end
             S_NOCARD: begin
-                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                counter_w = (counter_r[20]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
-                // if(1'b1) begin // counter_r[27]
+                // if(1'b1) begin // counter_r[20]
                     draw_card = 1'b1;
                     if(i_drawn) begin
                         if(i_drawed_card[3:0] == 4'b1101) begin // if the card is wild
@@ -599,7 +599,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 // end
             end
             S_NOCARD_R: begin
-                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                counter_w = (counter_r[20]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
                 draw_card = 1'b0;
                 state_w = S_CHECK;
@@ -608,7 +608,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 hand_num_w = hand_num_r + 1;
             end
             S_NOCARD_Y: begin
-                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                counter_w = (counter_r[20]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
                 draw_card = 1'b0;
                 state_w = S_CHECK;
@@ -617,7 +617,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 hand_num_w = hand_num_r + 1;
             end
             S_NOCARD_G: begin
-                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                counter_w = (counter_r[20]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
                 draw_card = 1'b0;
                 state_w = S_CHECK;
@@ -626,7 +626,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 hand_num_w = hand_num_r + 1;
             end
             S_NOCARD_B: begin
-                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                counter_w = (counter_r[20]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
                 draw_card = 1'b0;
                 state_w = S_CHECK;
@@ -635,7 +635,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 hand_num_w = hand_num_r + 1;
             end
             S_CHECK: begin
-                counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
+                counter_w = (counter_r[20]) ? counter_r : (counter_r + 1);
                 draw_card = 1'b0;
                 iter_w = 1'b0;
                 out = 1'b0;

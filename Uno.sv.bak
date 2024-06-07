@@ -110,7 +110,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
         .o_index(o_index),
         .o_hand_num(o_hand_num[0]),
         .o_score(o_score[0]),
-        .o_state(player_state),
+        .o_state(player_state)
         .o_select(o_select)
     );
 
