@@ -449,7 +449,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
             S_NOCARD: begin
                 counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
                 out = 1'b0;
-                if(1'b1) begin // counter_r[27]
+                // if(1'b1) begin // counter_r[27]
                     draw_card = 1'b1;
                     if(i_drawn) begin
                         state_w = S_CHECK;
@@ -472,13 +472,13 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                         hand_num_w = hand_num_r;
                         score_w = score_r;
                     end
-                end
-                else begin
-                    draw_card = 1'b0;
-                    state_w = S_NOCARD;
-                    hand_num_w = hand_num_r;
-                    score_w = score_r;
-                end
+                // end
+                // else begin
+                //     draw_card = 1'b0;
+                //     state_w = S_NOCARD;
+                //     hand_num_w = hand_num_r;
+                //     score_w = score_r;
+                // end
             end
             S_CHECK: begin
                 counter_w = (counter_r[27]) ? counter_r : (counter_r + 1);
