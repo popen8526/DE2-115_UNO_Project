@@ -258,7 +258,7 @@ always_comb begin
 	hands_num[1] = 0;
 	hands_num[2] = 0;
 	hands_num[3] = 0;
-	select_color = ((prev_card[3:0] == 4'b1110) || (prev_card[3:0] == 4'b1101)) ? 1'b1 : 1'b0;
+	select_color = ((prev_card_r[3:0] == 4'b1110) || (prev_card_r[3:0] == 4'b1101)) ? 1'b1 : 1'b0;
 	for(int i=0; i<10; i=i+1) begin
 		hands_w[i] = i;
 	end
@@ -273,10 +273,10 @@ always_comb begin
 		prev_card_w = prev_card_r;
 	end
 	if(key1down) begin
-		index_w = (index == 10'd108) ? 10'd0 :(index_r == 10'd9) ? 10'd108 : (index_r + 1);
+		index_w = (index_r == 10'd108) ? 10'd0 :(index_r == 10'd9) ? 10'd108 : (index_r + 1);
 	end
 	else if(key3down) begin
-		index_w = (index == 10'd108) ? 10'd10 :(index_r == 10'd0) ? 10'd108 : (index_r - 1);
+		index_w = (index_r == 10'd108) ? 10'd10 :(index_r == 10'd0) ? 10'd108 : (index_r - 1);
 	end
 	else begin
 		index_w = index_r;
