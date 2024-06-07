@@ -1,4 +1,4 @@
-module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev_card, o_draw, o_out_card, i_draw_two, i_draw_four, i_drawn, i_check, i_drawed_card, o_out, o_hands, o_index, o_hand_num, o_score);
+module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev_card, o_draw, o_out_card, i_draw_two, i_draw_four, i_drawn, i_check, i_drawed_card, o_out, o_hands, o_index, o_hand_num, o_score, o_state);
     //----------------- port definition -----------------//
     input i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_draw_two, i_draw_four, i_drawn, i_check;
     input [5:0] i_prev_card;
@@ -10,6 +10,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
     output [6:0] o_index; // current index of hand
     output [6:0] o_hand_num;
     output [10:0] o_score;
+    output [3:0] o_state;
     //----------------- fsm state definition -----------------//
     // states for main FSM
     localparam S_IDLE = 4'b0000, S_DRAW = 4'b0001, S_OUT = 4'b0010, S_PLAY = 4'b0011, S_SEARCHR = 4'b0100, S_SEARCHY = 4'b0101, S_SEARCHG = 4'b0110, S_SEARCHB = 4'b0111;
@@ -53,7 +54,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
     //----------------- wire connection -----------------//
     genvar x;
     generate
-        for(x=0; x<15; x++) begin : QQ
+        for(x=0; x<108; x++) begin : QQ
             assign o_hands[x] = hands_r[x];
         end
     endgenerate
@@ -62,6 +63,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
     assign o_out_card = out_card_r;
     assign o_index = index_r;
     assign o_hand_num = red_num_r + yellow_num_r + green_num_r + blue_num_r + wild_num_r + wildf_num_r;
+    assign o_state = state_r;// debug
     //----------------- combinational part -----------------//
     always_comb begin
         for(i = 0; i < 25; i = i + 1) begin

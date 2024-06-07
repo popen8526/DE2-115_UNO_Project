@@ -3,13 +3,14 @@
 // 0: red, 1: yellow, 2: green, 3: blue
 // 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9
 // 10: skip, 11: reverse, 12: draw two, 13: wild, 14: wild draw four
-module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_drawn, o_card); 
+module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_drawn, o_card, o_state_1, o_state_2); 
     //----------------- port definition -----------------//
     input        i_clk, i_rst_n, i_start, i_insert;
     // output [5:0] o_Deck [107:0]; // No need to output the whole deck
     input  [2:0] i_draw; // 100: draw four, 010 draw two, 001: draw one
     output       o_done, o_drawn;
     output [5:0] o_card;
+    output [2:0] o_state_1, o_state_2;
     input  [5:0] i_prev_card;
     //----------------- fsm state definition -----------------//
     localparam  S_IDLE_1 = 3'b000, S_SHUFFLE_1 = 3'b001, S_INSERT_1 = 3'b011, S_INIT_1 = 3'b100, S_WAIT_DRAW_1 = 3'b101, S_DRAW_1 = 3'b110;
@@ -34,6 +35,8 @@ module Deck(i_clk, i_rst_n, i_start, i_insert, i_prev_card, i_draw, o_done, o_dr
     assign draw = (draw_r[0] || draw_r[1] || draw_r[2]);
     assign o_drawn = in_use_r ? drawn_1 : drawn_2;
     assign o_card = in_use_r ? Deck_1_r[end_index_1_r] : Deck_2_r[end_index_2_r]; // always output the last card in the deck, when o_drawn is high, the last card is drawn.
+    assign o_state_1 = state_1_r;
+    assign o_state_2 = state_2_r;
     //----------------- combinational part for draw -----------------//
     always_comb begin
         if(state_1_r == S_WAIT_DRAW_1 && end_index_1_r == 0) begin

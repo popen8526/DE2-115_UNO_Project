@@ -1,4 +1,4 @@
-module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_score, o_index, o_hands, o_end, o_last_card);
+module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_score, o_index, o_hands, o_end, o_last_card, o_player_state, o_com0_state, o_com1_state, o_com2_state, o_deck_state_1, o_deck_state_2);
     input i_clk, i_rst_n, i_start, i_left, i_right, i_select;
     output [ 6:0] o_hand_num [3:0];
     output [10:0] o_score [3:0];
@@ -6,6 +6,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
     output [ 5:0] o_hands [107:0];
     output        o_end;
     output [ 6:0] o_last_card;
+    output [ 4:0] o_player_state, o_com0_state, o_com1_state, o_com2_state, o_deck_state_1, o_deck_state_2;
 
 
     localparam S_IDLE      = 4'd0;
@@ -46,6 +47,19 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
     logic [ 5:0] last_card_w, last_card_r;
     logic        reversed_w, reversed_r;
     logic        finish;
+
+    logic [4:0]  player_state;
+    logic [4:0]  com0_state;
+    logic [4:0]  com1_state;
+    logic [4:0]  com2_state;
+    logic [4:0]  deck_state_1;
+    logic [4:0]  deck_state_2;
+
+    assign deck_state_1[3] = 1'b0;
+    assign deck_state_1[4] = 1'b0; 
+
+    assign deck_state_2[3] = 1'b0;
+    assign deck_state_2[4] = 1'b0;
     
     // combinational logic
     assign insert = ((p0_turn && p0_play) || (com0_turn && com0_play) || (com1_turn && com1_play) || (com2_turn && com2_play));
@@ -56,6 +70,13 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
     assign com2_turn = ((state_r == S_COM2) || (state_r == S_COM2_BUFF));
     assign o_end = finish;
     assign o_last_card = last_card_r;
+    assign o_player_state = player_state;
+    assign o_com0_state = com0_state;
+    assign o_com1_state = com1_state;
+    assign o_com2_state = com2_state;
+    assign o_deck_state_1 = deck_state_1;
+    assign o_deck_state_2 = deck_state_2;
+    
     Deck Deck(
         .i_clk(i_clk),
         .i_rst_n(i_rst_n),
@@ -65,7 +86,9 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
         .i_draw(draw_num_r),
         .o_done(deck_idle),
         .o_drawn(card_drawn),
-        .o_card(next_card)
+        .o_card(next_card),
+        .o_state_1(deck_state_1[2:0]),
+        .o_state_2(deck_state_2[2:0])
     );
 
     Player P0(
@@ -88,7 +111,8 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
         .o_hands(o_hands),
         .o_index(o_index),
         .o_hand_num(o_hand_num[0]),
-        .o_score(o_score[0])
+        .o_score(o_score[0]),
+        .o_state(player_state)
     );
 
     Computer Com0(
@@ -106,7 +130,8 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
         .i_drawed_card(next_card),
         .o_out(com0_play),
         .o_hand_num(o_hand_num[1]),
-        .o_score(o_score[1])
+        .o_score(o_score[1]),
+        .o_state(com0_state)
     );
 
     Computer Com1(
@@ -124,7 +149,8 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
         .i_drawed_card(next_card),
         .o_out(com1_play),
         .o_hand_num(o_hand_num[2]),
-        .o_score(o_score[2])
+        .o_score(o_score[2]),
+        .o_state(com1_state)
     );
 
     Computer Com2(
@@ -142,7 +168,8 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
         .i_drawed_card(next_card),
         .o_out(com2_play),
         .o_hand_num(o_hand_num[3]),
-        .o_score(o_score[3])
+        .o_score(o_score[3]),
+        .o_state(com2_state)
     );
 
 
