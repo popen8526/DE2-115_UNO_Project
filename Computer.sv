@@ -51,6 +51,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
     assign o_out = out;
     assign o_draw_card = draw_card;
     assign o_hand_num = hand_num_r;
+    assign o_score = score_r;
     //----------------- combinational part -----------------//
     always_comb begin
         for(i=0; i<6; i++) begin

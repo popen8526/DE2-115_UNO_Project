@@ -6,7 +6,8 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
     output [ 5:0] o_hands [107:0];
     output        o_end;
     output [ 6:0] o_last_card;
-    output [ 4:0] o_player_state, o_com0_state, o_com1_state, o_com2_state, o_deck_state_1, o_deck_state_2;
+    output [ 3:0] o_player_state, o_com0_state, o_com1_state, o_com2_state, o_deck_state_1, o_deck_state_2;
+
 
 
     localparam S_IDLE      = 4'd0;
@@ -25,7 +26,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
     localparam S_COM2_BUFF = 4'd13;
     localparam S_END       = 4'd14;
     
-    logic [ 2:0] state_w, state_r;
+    logic [ 3:0] state_w, state_r;
     // wire definition for deck
     logic        shuffle_w, shuffle_r;
     logic        insert;
@@ -48,18 +49,16 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
     logic        reversed_w, reversed_r;
     logic        finish;
 
-    logic [4:0]  player_state;
-    logic [4:0]  com0_state;
-    logic [4:0]  com1_state;
-    logic [4:0]  com2_state;
-    logic [4:0]  deck_state_1;
-    logic [4:0]  deck_state_2;
+    logic [3:0]  player_state;
+    logic [3:0]  com0_state;
+    logic [3:0]  com1_state;
+    logic [3:0]  com2_state;
+    logic [3:0]  deck_state_1;
+    logic [3:0]  deck_state_2;
 
     assign deck_state_1[3] = 1'b0;
-    assign deck_state_1[4] = 1'b0; 
-
     assign deck_state_2[3] = 1'b0;
-    assign deck_state_2[4] = 1'b0;
+
     
     // combinational logic
     assign insert = ((p0_turn && p0_play) || (com0_turn && com0_play) || (com1_turn && com1_play) || (com2_turn && com2_play));

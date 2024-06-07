@@ -63,6 +63,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
     assign o_out_card = out_card_r;
     assign o_index = index_r;
     assign o_hand_num = red_num_r + yellow_num_r + green_num_r + blue_num_r + wild_num_r + wildf_num_r;
+    assign o_score = score_r;
     assign o_state = state_r;// debug
     //----------------- combinational part -----------------//
     always_comb begin
