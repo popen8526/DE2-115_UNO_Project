@@ -519,6 +519,7 @@ logic [4:0]  player_state;
 logic [4:0]  com0_state;
 logic [4:0]  com1_state;
 logic [4:0]  com2_state;
+logic [4:0]  uno_state;
 logic [4:0]  deck_state_1;
 logic [4:0]  deck_state_2;
 
@@ -609,7 +610,8 @@ Uno uno_instance (
 	.o_com2_state(com2_state), 
 	.o_deck_state_1(deck_state_1), 
 	.o_deck_state_2(deck_state_2),
-	.o_select(select_color)
+	.o_select(select_color),
+	.o_uno_state(uno_state[3:0])
 );
 
 logic key1down, key2down, key3down;
@@ -697,7 +699,7 @@ SevenHexDecoder seven_dec2(
 );
 
 SevenHexDecoder seven_dec3(
-.i_hex(com0_state),
+.i_hex(uno_state),
 .o_seven_ten(HEX7),
 .o_seven_one(HEX6)
 );

@@ -231,7 +231,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                     // end 
                     for(i=0; i<5'd25; i++) begin
                         if(i >= iter_r && i < red_num_r) begin
-                            red_hands_w[iter_r] = red_hands_r[iter_r+1];
+                            red_hands_w[i] = red_hands_r[i+1];
                         end
                         else begin
                             red_hands_w[i] = red_hands_r[i];
@@ -263,7 +263,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                     // end
                     for(i=0; i<5'd25; i++) begin
                         if(i >= iter_r && i < yellow_num_r) begin
-                            yellow_hands_w[iter_r] = yellow_hands_r[iter_r+1];
+                            yellow_hands_w[i] = yellow_hands_r[i+1];
                         end
                         else begin
                             yellow_hands_w[i] = yellow_hands_r[i];
@@ -295,7 +295,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                     // end
                     for(i=0; i<5'd25; i++) begin
                         if(i >= iter_r && i < green_num_r) begin
-                            green_hands_w[iter_r] = green_hands_r[iter_r+1];
+                            green_hands_w[i] = green_hands_r[i+1];
                         end
                         else begin
                             green_hands_w[i] = green_hands_r[i];
@@ -327,7 +327,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                     // end
                     for(i=0; i<5'd25; i++) begin
                         if(i >= iter_r && i < blue_num_r) begin
-                            blue_hands_w[iter_r] = blue_hands_r[iter_r+1];
+                            blue_hands_w[i] = blue_hands_r[i+1];
                         end
                         else begin
                             blue_hands_w[i] = blue_hands_r[i];
@@ -430,12 +430,12 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
         end
         case (state_hands_r)
             S_HOLD: begin
-                if(sort_r) begin
-                    state_hands_w = (!(red_num_r == 0)) ? S_SORT_RED : (!(yellow_num_r == 0))? S_SORT_YELLOW : (!(green_num_r == 0)) ? S_SORT_GREEN : (!(blue_num_r == 0)) ? S_SORT_BLUE : (!(wild_num_r == 0)) ? S_SORT_WILD : (!(wildf_num_r == 0)) ? S_SORT_WILDF : S_REMAIN;
-                end
-                else begin 
-                    state_hands_w = S_HOLD;
-                end
+                // if(sort_r) begin
+                state_hands_w = (!(red_num_r == 0)) ? S_SORT_RED : (!(yellow_num_r == 0))? S_SORT_YELLOW : (!(green_num_r == 0)) ? S_SORT_GREEN : (!(blue_num_r == 0)) ? S_SORT_BLUE : (!(wild_num_r == 0)) ? S_SORT_WILD : (!(wildf_num_r == 0)) ? S_SORT_WILDF : S_REMAIN;
+                // end
+                // else begin 
+                //     state_hands_w = S_HOLD;
+                // end
                 color_iter_w = 5'd0;
                 hands_iter_w = 10'd0;
             end

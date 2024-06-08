@@ -1,4 +1,4 @@
-module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_score, o_index, o_hands, o_end, o_last_card, o_player_state, o_com0_state, o_com1_state, o_com2_state, o_deck_state_1, o_deck_state_2, o_select);
+module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_score, o_index, o_hands, o_end, o_last_card, o_player_state, o_com0_state, o_com1_state, o_com2_state, o_deck_state_1, o_deck_state_2, o_select, o_uno_state);
     input i_clk, i_rst_n, i_start, i_left, i_right, i_select;
     output [ 6:0] o_hand_num [3:0];
     output [10:0] o_score [3:0];
@@ -6,7 +6,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
     output [ 5:0] o_hands [107:0];
     output        o_end, o_select;
     output [ 5:0] o_last_card;
-    output [ 3:0] o_player_state, o_com0_state, o_com1_state, o_com2_state, o_deck_state_1, o_deck_state_2;
+    output [ 3:0] o_player_state, o_com0_state, o_com1_state, o_com2_state, o_deck_state_1, o_deck_state_2, o_uno_state;
 
 
     localparam S_IDLE      = 4'd0;
@@ -74,6 +74,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
     assign o_com2_state = com2_state;
     assign o_deck_state_1 = deck_state_1;
     assign o_deck_state_2 = deck_state_2;
+    assign o_uno_state = state_r;
     
     Deck Deck(
         .i_clk(i_clk),
@@ -324,7 +325,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                             state_w = (reversed_r)? S_COM0:S_COM2;
                         end
                         else if(p0_pcard[3:0] == 4'd12) begin // draw two
-                            draw_num_w = 3'b010;
+                            draw_num_w = 3'b000;
                             state_w = S_P0_BUFF;
                             if(reversed_r) begin
                                 com0_draw2_w = 1'b0;
@@ -340,7 +341,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                             end
                         end
                         else if(p0_pcard[3:0] == 4'd14) begin // wild draw four
-                            draw_num_w = 3'b100;
+                            draw_num_w = 3'b000;
                             state_w = S_P0_BUFF;
                             if(reversed_r) begin
                                 com0_draw2_w = 1'b0;
@@ -393,12 +394,13 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                 com0_draw4_w = com0_draw4_r;
                 com2_draw2_w = com2_draw2_r;
                 com2_draw4_w = com2_draw4_r;
-                draw_num_w = draw_num_r;
                 if(deck_idle) begin
                     state_w = (com0_draw2_r || com0_draw4_r) ? S_COM0 : S_COM2;
+                    draw_num_w = (com0_draw2_r||com2_draw2_r) ? 3'b010 : 3'b100;
                 end
                 else begin
                     state_w = S_P0_BUFF;
+                    draw_num_w = 0;
                 end
             end
             S_COM0: begin
@@ -420,7 +422,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                             state_w = (reversed_r)? S_COM1:S_PLAYER;
                         end
                         else if(com0_pcard[3:0] == 4'd12) begin // draw two
-                            draw_num_w = 3'b010;
+                            draw_num_w = 3'b000;
                             state_w = S_COM0_BUFF;
                             if(reversed_r) begin
                                 com1_draw2_w = 1'b0;
@@ -436,7 +438,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                             end
                         end
                         else if(com0_pcard[3:0] == 4'd14) begin // wild draw four
-                            draw_num_w = 3'b100;
+                            draw_num_w = 3'b000;
                             state_w = S_COM0_BUFF;
                             if(reversed_r) begin
                                 com1_draw2_w = 1'b0;
@@ -489,12 +491,13 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                 com1_draw4_w = com1_draw4_r;
                 p0_draw2_w = p0_draw2_r;
                 p0_draw4_w = p0_draw4_r;
-                draw_num_w = draw_num_r;
                 if(deck_idle) begin
                     state_w = (com1_draw2_r || com1_draw4_r) ? S_COM1 : S_PLAYER;
+                    draw_num_w = (com1_draw2_r||p0_draw2_r) ? 3'b010 : 3'b100;
                 end
                 else begin
                     state_w = S_COM0_BUFF;
+                    draw_num_w = 0;
                 end
             end
             S_COM1: begin
@@ -516,7 +519,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                             state_w = (reversed_r)? S_COM2:S_COM0;
                         end
                         else if(com1_pcard[3:0] == 4'd12) begin // draw two
-                            draw_num_w = 3'b010;
+                            draw_num_w = 3'b000;
                             state_w = S_COM1_BUFF;
                             if(reversed_r) begin
                                 state_w = S_COM0;
@@ -534,7 +537,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                             end
                         end
                         else if(com1_pcard[3:0] == 4'd14) begin // wild draw four
-                            draw_num_w = 3'b100;
+                            draw_num_w = 3'b000;
                             state_w = S_COM1_BUFF;
                             if(reversed_r) begin
                                 state_w = S_COM0;
@@ -592,9 +595,11 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                 draw_num_w = draw_num_r;
                 if(deck_idle) begin
                     state_w = (com2_draw2_r || com2_draw4_r) ? S_COM2 : S_COM0;
+                    draw_num_w = (com2_draw2_r|| com0_draw2_r) ? 3'b010 : 3'b100;
                 end
                 else begin
                     state_w = S_COM1_BUFF;
+                    draw_num_w = 0;
                 end
             end
             S_COM2: begin
@@ -616,7 +621,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                             state_w = (reversed_r)? S_PLAYER:S_COM1;
                         end
                         else if(com2_pcard[3:0] == 4'd12) begin // draw two
-                            draw_num_w = 3'b010;
+                            draw_num_w = 3'b000;
                             state_w = S_COM2_BUFF;
                             if(reversed_r) begin
                                 state_w = S_COM1;
@@ -634,7 +639,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                             end
                         end
                         else if(com2_pcard[3:0] == 4'd14) begin // wild draw four
-                            draw_num_w = 3'b100;
+                            draw_num_w = 3'b000;
                             state_w = S_COM2_BUFF;
                             if(reversed_r) begin
                                 state_w = S_COM0;
@@ -692,9 +697,11 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                 draw_num_w = draw_num_r;
                 if(deck_idle) begin
                     state_w = (p0_draw2_r || p0_draw4_r) ? S_PLAYER : S_COM1;
+                    draw_num_w = (p0_draw2_r||com1_draw2_r) ? 3'b010 : 3'b100;
                 end
                 else begin
                     state_w = S_COM2_BUFF;
+                    draw_num_w = 0;
                 end
             end
             S_END: begin
