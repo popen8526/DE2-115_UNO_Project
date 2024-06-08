@@ -10,7 +10,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
     output [10:0] o_score;
     output [3:0] o_state;
     //----------------- fsm state definition -----------------//
-    localparam S_IDLE = 4'b000, S_DRAW = 4'b001, S_OUT = 4'b010, S_NOCARD = 4'b011, S_CHECK_COLOR = 4'b100, S_CHECK_NUM = 4'b101, S_CHECK = 4'b110, S_CHOOSE = 4'b111;
+    localparam S_IDLE = 4'b0000, S_DRAW = 4'b0001, S_OUT = 4'b0010, S_NOCARD = 4'b0011, S_CHECK_COLOR = 4'b0100, S_CHECK_NUM = 4'b0101, S_CHECK = 4'b0110, S_CHOOSE = 4'b0111;
     localparam S_DRAW_R = 4'b1000, S_DRAW_Y = 4'b1001, S_DRAW_G = 4'b1010, S_DRAW_B = 4'b1011, S_NOCARD_R = 4'b1100, S_NOCARD_Y = 4'b1101, S_NOCARD_G = 4'b1110, S_NOCARD_B = 4'b1111;
     //----------------- sequential signal definition -----------------//
     // first dimension : 0-red, 1-yellow, 2-green, 3-blue, 4-wild, 5-wild draw four
@@ -29,7 +29,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
     logic [5:0] out_card_w, out_card_r;
     logic       out;
 
-    logic [3:0] lfsr_w, lfsr_r;
+    logic [5:0] lfsr_w, lfsr_r;
     logic [27:0] counter_w, counter_r;
     integer i, j, k, l;
     //----------------- wire connection -----------------//
@@ -63,7 +63,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
         score_w = score_r;
         out_card_w = out_card_r;
         iter_w = iter_r;
-        lfsr_w = {lfsr_r[0]^lfsr_r[1], lfsr_r[3], lfsr_r[2], lfsr_r[1]};
+        lfsr_w = {lfsr_r[0]^lfsr_r[1], lfsr_r[5], lfsr_r[4], lfsr_r[3], lfsr_r[2], lfsr_r[1]};
         case(state_r)
             S_IDLE: begin
                 counter_w = 28'd0;
@@ -244,15 +244,15 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
             S_OUT: begin
                 counter_w = (counter_r[20]) ? counter_r : (counter_r + 1);
                 draw_card = 1'b0;
-                out = counter_r[20];
-                // out = 1'b1;
+                // out = counter_r[20];
+                out = 1'b1;
                 if(i_check) begin
-                    // out = 1'b1; // play the card
+                    out = 1'b1; // play the card
                     state_w = S_IDLE;
                     out_card_w = 6'd0;
                 end
                 else begin
-                    // out = 1'b0; // play the card
+                    out = 1'b0; // play the card
                     state_w = S_OUT;
                     out_card_w = out_card_r;
                 end
@@ -654,7 +654,7 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
             end
             iter_r <= 3'd0;
             out_card_r <= 6'd0;
-            lfsr_r <= 4'b0110;
+            lfsr_r <= 6'b000110;
             counter_r <= 28'd0;
             hand_num_r <= 7'd0;
             score_r <= 11'd0;

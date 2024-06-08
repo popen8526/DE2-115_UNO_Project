@@ -29,10 +29,6 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
     logic [5:0] green_hands_r [24:0];
     logic [5:0] yellow_hands_w [24:0];
     logic [5:0] yellow_hands_r [24:0];
-    logic [5:0] wild_hands_w [3:0];
-    logic [5:0] wild_hands_r [3:0];
-    logic [5:0] wildf_hands_w [3:0];
-    logic [5:0] wildf_hands_r [3:0];
     logic [5:0] hands_w [107:0];
     logic [5:0] hands_r [107:0];
 
@@ -76,10 +72,6 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
             blue_hands_w[i] = blue_hands_r[i];
             green_hands_w[i] = green_hands_r[i];
             yellow_hands_w[i] = yellow_hands_r[i];
-        end
-        for(i = 0; i < 4; i = i + 1) begin
-            wild_hands_w[i] = wild_hands_r[i];
-            wildf_hands_w[i] = wildf_hands_r[i];
         end
         red_num_w = red_num_r;
         blue_num_w = blue_num_r;
@@ -138,12 +130,10 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                         draw_num_w = draw_num_r - 1;
                     end
                     if(i_drawed_card[3:0] == 4'b1101) begin // if the card is wild
-                        wild_hands_w[wild_num_r] = i_drawed_card;
                         wild_num_w = wild_num_r + 1;
                         score_w = score_r + 50;
                     end
                     else if (i_drawed_card[3:0] == 4'b1110) begin // if the card is wild draw four
-                        wildf_hands_w[wildf_num_r] = i_drawed_card;
                         wildf_num_w = wildf_num_r + 1;
                         score_w = score_r + 50;
                     end
@@ -202,13 +192,11 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                             state_w = S_CHOOSE;
                             out_card_w = {2'b00, 4'd13};
                             wild_num_w = wild_num_r - 1;
-                            wild_hands_w[wild_num_r - 1] = 6'b111111;
                         end
                         else if(hands_r[index_r][3:0] == 4'd14) begin
                             state_w = S_CHOOSE;
                             out_card_w = {2'b00, 4'd14};
                             wildf_num_w = wildf_num_r - 1;
-                            wildf_hands_w[wildf_num_r - 1] = 6'b111111;
                         end
                         else if(hands_r[index_r][5:4] == i_prev_card[5:4] || hands_r[index_r][3:0] == i_prev_card[3:0]) begin
                             case (hands_r[index_r][5:4])
@@ -367,12 +355,10 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                     sort_w = 1'b1;
                     state_w = S_CHECK;
                     if(i_drawed_card[3:0] == 4'b1101) begin // if the card is wild
-                        wild_hands_w[wild_num_r] = i_drawed_card;
                         wild_num_w = wild_num_r + 1;
                         score_w = score_r + 50;
                     end
                     else if (i_drawed_card[3:0] == 4'b1110) begin // if the card is wild draw four
-                        wildf_hands_w[wildf_num_r] = i_drawed_card;
                         wildf_num_w = wildf_num_r + 1;
                         score_w = score_r + 50;
                     end
@@ -414,6 +400,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
             end
             S_CHOOSE: begin
                 iter_w = 5'd0;
+                sort_w = 1'b1;
                 select_color = 1'b1;
                 out = 1'b0;
                 draw_card = 1'b0;
@@ -478,18 +465,18 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
             end
             S_SORT_WILD: begin
                 state_hands_w = (color_iter_r == wild_num_r - 1) ? ((!(wildf_num_r == 0)) ? S_SORT_WILDF : S_REMAIN) : S_SORT_WILD;
-                hands_w[hands_iter_r] = wild_hands_r[color_iter_r];
+                hands_w[hands_iter_r] = 6'b001101;
                 color_iter_w = (color_iter_r == wild_num_r - 1) ? 5'd0 : color_iter_r + 1;
                 hands_iter_w = hands_iter_r + 1;
             end
             S_SORT_WILDF: begin
                 state_hands_w = (color_iter_r == wildf_num_r - 1) ? S_REMAIN : S_SORT_WILDF;
-                hands_w[hands_iter_r] = wildf_hands_r[color_iter_r];
+                hands_w[hands_iter_r] = 6'b001110;
                 color_iter_w = (color_iter_r == wildf_num_r - 1) ? 5'd0 : color_iter_r + 1;
                 hands_iter_w = hands_iter_r + 1;
             end
             S_REMAIN: begin
-                state_hands_w = (hands_iter_r == 10'd107) ? S_REMAIN :S_HOLD;
+                state_hands_w = (hands_iter_r < 10'd107) ? S_REMAIN :S_HOLD;
                 hands_w[hands_iter_r] = 6'b111111;
                 color_iter_w = color_iter_r;
                 hands_iter_w = hands_iter_r + 1;
@@ -569,10 +556,6 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                 green_hands_r[k] <= 6'b111111;
                 yellow_hands_r[k] <= 6'b111111;
             end
-            for(k = 0; k < 4; k = k + 1) begin
-                wild_hands_r[k] <= 6'b111111;
-                wildf_hands_r[k] <= 6'b111111;
-            end
             red_num_r <= 5'b0;
             blue_num_r <= 5'b0;
             green_num_r <= 5'b0;
@@ -600,10 +583,6 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                 blue_hands_r[k] <= blue_hands_w[k];
                 green_hands_r[k] <= green_hands_w[k];
                 yellow_hands_r[k] <= yellow_hands_w[k];
-            end
-            for(k = 0; k < 4; k = k + 1) begin
-                wild_hands_r[k] <= wild_hands_w[k];
-                wildf_hands_r[k] <= wildf_hands_w[k];
             end
             red_num_r <= red_num_w;
             blue_num_r <= blue_num_w;
