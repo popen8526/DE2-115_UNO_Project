@@ -229,7 +229,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                     // for(i=iter_r; i<red_num_r; i++) begin
                         // red_hands_w[iter_r] = red_hands_r[iter_r+1];
                     // end 
-                    for(i=0; i<5'd25; i++) begin
+                    for(i=0; i<5'd24; i++) begin
                         if(i >= iter_r && i < red_num_r) begin
                             red_hands_w[i] = red_hands_r[i+1];
                         end
@@ -237,6 +237,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                             red_hands_w[i] = red_hands_r[i];
                         end
                     end
+                    red_hands_w[24] = 6'b111111;
                     red_num_w = red_num_r - 1;
                     out_card_w = red_hands_r[iter_r];
                     score_w = score_r - ((red_hands_r[iter_r][3:0] >= 4'd10) ? (20) : (red_hands_r[iter_r][3:0]));
@@ -261,7 +262,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                     // for(i=iter_r; i<yellow_num_r; i++) begin
                     //     yellow_hands_w[iter_r] = yellow_hands_r[iter_r+1];
                     // end
-                    for(i=0; i<5'd25; i++) begin
+                    for(i=0; i<5'd24; i++) begin
                         if(i >= iter_r && i < yellow_num_r) begin
                             yellow_hands_w[i] = yellow_hands_r[i+1];
                         end
@@ -269,6 +270,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                             yellow_hands_w[i] = yellow_hands_r[i];
                         end
                     end
+                    yellow_hands_w[24] = 6'b111111;
                     yellow_num_w = yellow_num_r - 1;
                     out_card_w = yellow_hands_r[iter_r];
                     score_w = score_r - ((yellow_hands_r[iter_r][3:0] >= 4'd10) ? (20) : (yellow_hands_r[iter_r][3:0]));
@@ -293,7 +295,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                     // for(i=iter_r; i<green_num_r; i++) begin
                     //     green_hands_w[iter_r] = green_hands_r[iter_r+1];
                     // end
-                    for(i=0; i<5'd25; i++) begin
+                    for(i=0; i<5'd24; i++) begin
                         if(i >= iter_r && i < green_num_r) begin
                             green_hands_w[i] = green_hands_r[i+1];
                         end
@@ -301,6 +303,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                             green_hands_w[i] = green_hands_r[i];
                         end
                     end
+                    green_hands_w[24] = 6'b111111;
                     green_num_w = green_num_r - 1;
                     out_card_w = green_hands_r[iter_r];
                     score_w = score_r - ((green_hands_r[iter_r][3:0] >= 4'd10) ? (20) : (green_hands_r[iter_r][3:0]));
@@ -325,7 +328,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                     // for(i=iter_r; i<blue_num_r; i++) begin
                     //     blue_hands_w[iter_r] = blue_hands_r[iter_r+1];
                     // end
-                    for(i=0; i<5'd25; i++) begin
+                    for(i=0; i<5'd24; i++) begin
                         if(i >= iter_r && i < blue_num_r) begin
                             blue_hands_w[i] = blue_hands_r[i+1];
                         end
@@ -333,6 +336,7 @@ module Player(i_clk, i_rst_n, i_init, i_left, i_right, i_select, i_start, i_prev
                             blue_hands_w[i] = blue_hands_r[i];
                         end
                     end
+                    blue_hands_w[24] = 6'b111111;
                     blue_num_w = blue_num_r - 1;
                     out_card_w = blue_hands_r[iter_r];
                     score_w = score_r - ((blue_hands_r[iter_r][3:0] >= 4'd10) ? (20) : (blue_hands_r[iter_r][3:0]));
