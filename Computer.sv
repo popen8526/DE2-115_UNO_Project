@@ -643,11 +643,11 @@ module Computer(i_clk, i_rst_n, i_init, i_start, i_prev_card, o_out_card, o_draw
                 state_w = (i_check) ? S_IDLE : S_CHECK;
             end
             S_BUFFER: begin
-                counter_w = (counter_r[5]) ? counter_r : (counter_r + 1);
+                counter_w = (counter_r[20]) ? counter_r : (counter_r + 1);
                 draw_card = 1'b0;
                 iter_w = 1'b0;
                 out = 1'b0;
-                if(counter_r[5]) begin
+                if(counter_r[20]) begin
                     state_w = S_CHECK_COLOR;
                 end
                 else begin
