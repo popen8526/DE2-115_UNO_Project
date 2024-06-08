@@ -530,14 +530,14 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                             draw_num_w = 3'b000;
                             state_w = S_COM1_BUFF;
                             if(reversed_r) begin
-                                state_w = S_COM0;
+                                // state_w = S_COM0;
                                 com2_draw2_w = 1'b0;
                                 com2_draw4_w = 1'b0;
                                 com0_draw2_w = 1'b1;
                                 com0_draw4_w = 1'b0;
                             end
                             else begin
-                                state_w = S_COM2;
+                                // state_w = S_COM2;
                                 com2_draw2_w = 1'b1;
                                 com2_draw4_w = 1'b0;
                                 com0_draw2_w = 1'b0;
@@ -548,14 +548,14 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                             draw_num_w = 3'b000;
                             state_w = S_COM1_BUFF;
                             if(reversed_r) begin
-                                state_w = S_COM0;
+                                // state_w = S_COM0;
                                 com2_draw2_w = 1'b0;
                                 com2_draw4_w = 1'b0;
                                 com0_draw2_w = 1'b0;
                                 com0_draw4_w = 1'b1;
                             end
                             else begin
-                                state_w = S_COM2;
+                                // state_w = S_COM2;
                                 com2_draw2_w = 1'b0;
                                 com2_draw4_w = 1'b1;
                                 com0_draw2_w = 1'b0;
@@ -626,20 +626,20 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                         end
                         else if(com2_pcard[3:0] == 4'd11) begin // reverse
                             draw_num_w = 3'b000;
-                            state_w = (reversed_r)? S_PLAYER:S_COM1;
+                            state_w = (reversed_r)? S_PLAYER: S_COM1;
                         end
                         else if(com2_pcard[3:0] == 4'd12) begin // draw two
                             draw_num_w = 3'b000;
                             state_w = S_COM2_BUFF;
                             if(reversed_r) begin
-                                state_w = S_COM1;
+                                // state_w = S_COM1;
                                 p0_draw2_w = 1'b0;
                                 p0_draw4_w = 1'b0;
                                 com1_draw2_w = 1'b1;
                                 com1_draw4_w = 1'b0;
                             end
                             else begin
-                                state_w = S_PLAYER;
+                                // state_w = S_PLAYER;
                                 p0_draw2_w = 1'b1;
                                 p0_draw4_w = 1'b0;
                                 com1_draw2_w = 1'b0;
@@ -650,14 +650,14 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                             draw_num_w = 3'b000;
                             state_w = S_COM2_BUFF;
                             if(reversed_r) begin
-                                state_w = S_COM0;
+                                // state_w = S_COM0;
                                 p0_draw2_w = 1'b0;
                                 p0_draw4_w = 1'b0;
                                 com1_draw2_w = 1'b0;
                                 com1_draw4_w = 1'b1;
                             end
                             else begin
-                                state_w = S_COM2;
+                                // state_w = S_COM2;
                                 p0_draw2_w = 1'b0;
                                 p0_draw4_w = 1'b1;
                                 com1_draw2_w = 1'b0;

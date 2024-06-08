@@ -682,18 +682,18 @@ Debounce deb3(
 // 	end
 // end
 SevenHexDecoder seven_dec0(
-.i_hex(deck_state_1),
+.i_hex(com_0_state),
 .o_seven_ten(HEX1),
 .o_seven_one(HEX0)
 );
 SevenHexDecoder seven_dec1(
-.i_hex(deck_state_2),
+.i_hex(com_1_state),
 .o_seven_ten(HEX3),
 .o_seven_one(HEX2)
 );
 
 SevenHexDecoder seven_dec2(
-.i_hex(player_state),
+.i_hex(com2_state),
 .o_seven_ten(HEX5),
 .o_seven_one(HEX4)
 );
