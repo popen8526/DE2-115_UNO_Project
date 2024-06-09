@@ -1,4 +1,4 @@
-module company_lable(
+module company_label(
 	input [9:0] x_cnt,
 	input [9:0] y_cnt,
 	input [9:0] x_pin,

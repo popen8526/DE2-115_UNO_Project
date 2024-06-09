@@ -9,6 +9,7 @@ module Display(
     input         i_select_color,
     input  [10:0] i_score [3:0], 
     input  [3:0]  i_uno_state,
+    input         i_start,
     output [7:0] VGA_B,
     output VGA_BLANK_N,
     output VGA_CLK,
@@ -22,7 +23,7 @@ module Display(
     logic [7:0] pixel          [2:0];
     logic [9:0] x_cnt, y_cnt, bg_x_pin, bg_y_pin, Index_x_pin_w, Index_x_pin_r, Index_y_pin_w, Index_y_pin_r, Index_2_x_pin_w, Index_2_x_pin_r, Index_2_y_pin_w, Index_2_y_pin_r;
     logic [9:0] current_x_pin, current_y_pin, prev_card_x_pin, prev_card_y_pin, pure_x_pin, pure_y_pin, prev_x_pin, prev_y_pin, cr_x_pin, cr_y_pin;
-    logic [7:0] bg_r_pixel, bg_g_pixel, bg_b_pixel, sb_r_pixel, sb_g_pixel, sb_b_pixel, ce_r_pixel, ce_g_pixel, ce_b_pixel, cr_r_pixel, cr_g_pixel, cr_b_pixel;
+    logic [7:0] bg_r_pixel, bg_g_pixel, bg_b_pixel, sb_r_pixel, sb_g_pixel, sb_b_pixel, ce_r_pixel, ce_g_pixel, ce_b_pixel, cr_r_pixel, cr_g_pixel, cr_b_pixel, cl_r_pixel, cl_g_pixel, cl_b_pixel, start_r_pixel, start_g_pixel, start_b_pixel;
     logic [7:0] Index_r_pixel, Index_g_pixel, Index_b_pixel, pure_r_pixel, pure_g_pixel, pure_b_pixel, Index_2_r_pixel, Index_2_g_pixel, Index_2_b_pixel;
     logic [7:0] draw_card_r_pixel;
     logic [7:0] draw_card_g_pixel;
@@ -69,6 +70,8 @@ module Display(
     logic [9:0] digits_2_y_pin [2:0];
     logic [9:0] digits_3_x_pin [2:0];
     logic [9:0] digits_3_y_pin [2:0];
+    logic       init_pict_w, init_pict_r;
+    logic [27:0] counter_w, counter_r;
 
 
     // logic [12:0] red_in_use, yellow_in_use, green_in_use, blue_in_use;
@@ -212,6 +215,24 @@ module Display(
         .r_data(Index_2_r_pixel),
         .g_data(Index_2_g_pixel),
         .b_data(Index_2_b_pixel)
+    );
+    company_label company_label_instance (
+        .x_cnt(x_cnt),
+        .y_cnt(y_cnt),
+        .x_pin(160),
+        .y_pin(50),
+        .r_data(cl_r_pixel),
+        .g_data(cl_g_pixel),
+        .b_data(cl_b_pixel)
+    );
+    start start_instance (
+        .x_cnt(x_cnt),
+        .y_cnt(y_cnt),
+        .x_pin(160),
+        .y_pin(50),
+        .r_data(start_r_pixel),
+        .g_data(start_g_pixel),
+        .b_data(start_b_pixel)
     );
     draw_card draw_card_instance (
         .x_cnt(x_cnt),
@@ -630,6 +651,15 @@ module Display(
         .b_data(cr_b_pixel)
     );
     always_comb begin
+        if((i_hands_num[0] == 0) || (i_hands_num[1] == 0) || (i_hands_num[2] == 0) || (i_hands_num[3] == 0)) begin
+            if(!counter_r[27])  counter_w = counter_r + 1;
+            else                counter_w = counter_r;
+        end
+        else begin
+            counter_w = counter_r;
+        end
+    end
+    always_comb begin
         Index_y_pin_w = 10'd470;
         if(i_index[6:0] - local_index_r > 8'd14) begin
             Index_x_pin_w = Index_x_pin_r;
@@ -650,6 +680,7 @@ module Display(
         end
     end 
     always_comb begin
+        init_pict_w = init_pict_r;
         if(i_finished) begin
             Index_2_x_pin_w = 0;
             Index_2_y_pin_w = 0;
@@ -682,6 +713,7 @@ module Display(
             color = i_prev_card[5:4];
             select_color = 3'b000;
             cr_x_pin = 10'd220;
+            init_pict_w = init_pict_r;
             cr_y_pin = (i_hands_num[0] == 8'd0) ? 10'd185 : (i_hands_num[1] == 8'd0) ? 10'd250 : (i_hands_num[2] == 8'd0) ? 10'd315 : 10'd380;
             if ((cr_x_pin <= x_cnt && x_cnt < cr_x_pin + 80) && (cr_y_pin <= y_cnt && y_cnt < cr_y_pin + 50)) begin
                 pixel[0] = cr_r_pixel;
@@ -761,9 +793,27 @@ module Display(
             select_color = 3'b000;
             cr_x_pin = 10'd0;
             cr_y_pin = 10'd0;
-            pixel[0] = ce_r_pixel;
-            pixel[1] = ce_g_pixel;
-            pixel[2] = ce_b_pixel;
+            if(!counter_r[27]) begin
+                //  calling company logo
+                pixel[0] = cl_r_pixel;
+                pixel[1] = cl_g_pixel;
+                pixel[2] = cl_b_pixel;
+                init_pict_w = init_pict_r;
+            end 
+            else if(!init_pict_r) begin
+                // calling start screen
+                pixel[0] = start_r_pixel;
+                pixel[1] = start_g_pixel;
+                pixel[2] = start_b_pixel;
+                if(i_start)  init_pict_w = 1'b1;
+                else         init_pict_w = 1'b0;
+            end
+            else begin
+                pixel[0] = ce_r_pixel;
+                pixel[1] = ce_g_pixel;
+                pixel[2] = ce_b_pixel;
+                init_pict_w = init_pict_r;
+            end
         end
         else if ((Index_2_x_pin_r <= x_cnt && x_cnt < Index_2_x_pin_r + 60) && (Index_2_y_pin_r <= y_cnt && y_cnt < Index_2_y_pin_r + 10)) begin
             current_x_pin = prev_x_pin;
@@ -1178,6 +1228,8 @@ module Display(
             Index_2_x_pin_r <= 10'd680;
             Index_2_y_pin_r <= 10'd365;
             local_index_r <= 7'd0;
+            init_pict_r <= 1'b0;
+            counter_r <= 26'd0;
         end
         else begin
             Index_x_pin_r <= Index_x_pin_w;
@@ -1185,6 +1237,8 @@ module Display(
             Index_2_x_pin_r <= Index_2_x_pin_w;
             Index_2_y_pin_r <= Index_2_y_pin_w;
             local_index_r <= local_index_w;
+            init_pict_r <= init_pict_w;
+            counter_r <= counter_w;
         end
     end
 endmodule

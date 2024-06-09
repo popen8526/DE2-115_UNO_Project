@@ -143,11 +143,13 @@ wire alter_key_1;
 wire alter_key_2;
 wire alter_key_3;
 wire start_key;
+wire uno_key;
 
 assign alter_key_1 = (char == 8'h24);
 assign alter_key_2 = (char == 8'h5a);
 assign alter_key_3 = (char == 8'h15);
 assign start_key = (char == 8'h29);
+assign uno_key = (char == 8'h3c);
 
 // TODO: Using Qsys to generate PLL to create "i_clk_25M"
 audio audio_inst (
@@ -171,7 +173,7 @@ keyboard_driver keyboard_driver_inst (
 );
 
 localparam S_INIT = 2'b00, S_HOLD = 2'b01, S_DONE = 2'b11;
-logic [2:0] state_1_w, state_1_r, state_2_w, state_2_r, state_3_w, state_3_r, state_4_w, state_4_r, prev_key_r, prev_key_w;
+logic [2:0] state_1_w, state_1_r, state_2_w, state_2_r, state_3_w, state_3_r, state_4_w, state_4_r, state_5_w, state_5_r, prev_key_r, prev_key_w;
 // logic [5:0] hands_w [108:0];
 // logic [5:0] hands_r [108:0];
 // logic [6:0] hands_num [3:0];
@@ -182,7 +184,7 @@ logic [4:0] prev_card_w, prev_card_r;
 // logic [7:0] local_index;
 // logic [6:0] hands_num_w [3:0];
 // logic [6:0] hands_num_r [3:0];
-wire key1down, key2down, key3down, start;
+wire key1down, key2down, key3down, start, uno;
 
 logic [4:0]  player_state;
 logic [4:0]  com0_state;
@@ -211,6 +213,7 @@ Display display_instance (
 	.i_select_color(select_color),
 	.i_score(score),
 	.i_uno_state(uno_state),
+	.i_start(start),
     .VGA_B(VGA_B),
     .VGA_BLANK_N(VGA_BLANK_N),
     .VGA_CLK(VGA_CLK),
@@ -229,6 +232,7 @@ Uno uno_instance (
 	.i_left(key3down),
 	.i_right(key1down),
 	.i_select(key2down),
+	.i_uno(uno),
 	.o_hand_num(hands_num),
 	.o_score(score),
 	.o_index(index),
@@ -352,6 +356,27 @@ always_comb begin
 			else 			state_4_w = S_DONE;
 		end
 	endcase
+	case(state_5_r)
+		S_INIT: begin
+			if(uno_key)	begin
+				state_5_w = S_HOLD;
+				uno = 0;
+			end
+			else begin
+				state_5_w = S_INIT;
+				uno = 0;
+			end
+		end
+		S_HOLD: begin
+			state_5_w = S_DONE;
+			uno = (prev_key_r == 5) ? 1 : 0;
+		end
+		S_DONE: begin
+			uno = 0;
+			if(~uno_key)	state_5_w = S_INIT;
+			else 				state_5_w = S_DONE;
+		end
+	endcase
 end
 always_comb begin
 	if(state_1_r == S_HOLD) begin
@@ -366,6 +391,9 @@ always_comb begin
 	else if(state_4_r == S_HOLD)begin
 		prev_key_w = 4;
 	end
+	else if(state_5_r == S_HOLD)begin
+		prev_key_w = 5;
+	end
 	else begin
 		prev_key_w = prev_key_r;
 	end
@@ -376,6 +404,7 @@ always_ff @(posedge i_clk_1M or negedge i_rst_n) begin
 		state_2_r <= S_INIT;
 		state_3_r <= S_INIT;
 		state_4_r <= S_INIT;
+		state_5_r <= S_INIT;
 		prev_key_r <= 0;
 	end
 	else begin
@@ -383,6 +412,7 @@ always_ff @(posedge i_clk_1M or negedge i_rst_n) begin
 		state_2_r <= state_2_w;
 		state_3_r <= state_3_w;
 		state_4_r <= state_4_w;
+		state_5_r <= state_5_w;
 		prev_key_r <= prev_key_w;
 	end
 end

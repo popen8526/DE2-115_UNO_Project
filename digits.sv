@@ -35,13 +35,13 @@ logic [6:0] exist;
 
 *************************************/
 always_comb begin
-    exist[0] = (number == 0 || number == 2 || number == 3 || number == 5 || number == 6 || number == 7 || number == 8 || number == 9);
+    exist[0] = (number == 0 || number == 2 || number == 3 || number == 5 || number == 6 || number == 7 || number == 8 || number == 9 || number >= 10);
     exist[1] = (number == 2 || number == 3 || number == 4 || number == 5 || number == 6 || number == 8 || number == 9);
-    exist[2] = (number == 0 || number == 2 || number == 3 || number == 5 || number == 6 || number == 8);
-    exist[3] = (number == 0 || number == 4 || number == 5 || number == 6 || number == 8 || number == 9);
-    exist[4] = (number == 0 || number == 1 || number == 2 || number == 3 || number == 4 || number == 7 || number == 8 || number == 9);
-    exist[5] = (number == 0 || number == 2 || number == 6 || number == 8);
-    exist[6] = (number == 0 || number == 1 || number == 3 || number == 4 || number == 5 || number == 6 || number == 7 || number == 8 || number == 9);
+    exist[2] = (number == 0 || number == 2 || number == 3 || number == 5 || number == 6 || number == 8 || number >= 10);
+    exist[3] = (number == 0 || number == 4 || number == 5 || number == 6 || number == 8 || number == 9 || number >= 10);
+    exist[4] = (number == 0 || number == 1 || number == 2 || number == 3 || number == 4 || number == 7 || number == 8 || number == 9 || number >= 10);
+    exist[5] = (number == 0 || number == 2 || number == 6 || number == 8 || number >= 10);
+    exist[6] = (number == 0 || number == 1 || number == 3 || number == 4 || number == 5 || number == 6 || number == 7 || number == 8 || number == 9 || number >= 10);
 	if((x_pin <= x_cnt && x_cnt <= x_pin + x_width) && (y_pin <= y_cnt && y_cnt <= y_pin + y_width)) begin
         if(exist[0]&&(x_pin + 8 <= x_cnt && x_cnt <= x_pin + 22) && (y_pin + 9 <= y_cnt && y_cnt <= y_pin + 11)) begin
             r_data = 8'b11111111;
