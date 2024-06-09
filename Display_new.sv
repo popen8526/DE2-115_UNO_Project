@@ -20,7 +20,7 @@ module Display(
     logic [7:0] pixel          [2:0];
     logic [9:0] x_cnt, y_cnt, bg_x_pin, bg_y_pin, Index_x_pin_w, Index_x_pin_r, Index_y_pin_w, Index_y_pin_r;
     logic [9:0] current_x_pin, current_y_pin, prev_card_x_pin, prev_card_y_pin, pure_x_pin, pure_y_pin, prev_x_pin, prev_y_pin;
-    logic [7:0] bg_r_pixel, bg_g_pixel, bg_b_pixel;
+    logic [7:0] bg_r_pixel, bg_g_pixel, bg_b_pixel, sb_r_pixel, sb_g_pixel, sb_b_pixel;
     logic [7:0] Index_r_pixel, Index_g_pixel, Index_b_pixel, pure_r_pixel, pure_g_pixel, pure_b_pixel;
     logic [7:0] draw_card_r_pixel;
     logic [7:0] draw_card_g_pixel;
@@ -83,6 +83,16 @@ module Display(
     );
 
     Background background_instance (
+        .x_cnt(x_cnt),
+        .y_cnt(y_cnt),
+        .x_pin(bg_x_pin),
+        .y_pin(bg_y_pin),
+        .r_data(bg_r_pixel),
+        .g_data(bg_g_pixel),
+        .b_data(bg_b_pixel)
+    );
+
+    scoreboard scoreboard_instance (
         .x_cnt(x_cnt),
         .y_cnt(y_cnt),
         .x_pin(bg_x_pin),
@@ -300,7 +310,16 @@ module Display(
         end
     end 
     always_comb begin
-        if ((430 <= x_cnt && x_cnt < 460) && (230 <= y_cnt && y_cnt < 280)) begin
+        if(i_finished) begin
+            current_x_pin = prev_x_pin;
+            current_y_pin = prev_y_pin;
+            color = i_prev_card[5:4];
+            select_color = 3'b000;
+            pixel[0] = sb_r_pixel;
+            pixel[1] = sb_g_pixel;
+            pixel[2] = sb_b_pixel;
+        end
+        else if ((430 <= x_cnt && x_cnt < 460) && (230 <= y_cnt && y_cnt < 280)) begin
             current_x_pin = prev_x_pin;
             current_y_pin = prev_y_pin;
             color = i_prev_card[5:4];
