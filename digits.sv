@@ -9,6 +9,10 @@ module digits(
     input [7:0] bg_r_pixel,
     input [7:0] bg_g_pixel,
     input [7:0] bg_b_pixel,
+    input [7:0] sb_r_pixel,
+    input [7:0] sb_g_pixel,
+    input [7:0] sb_b_pixel,
+    input i_finished,
     output [7:0] r_data,
     output [7:0] g_data,
     output [7:0] b_data
@@ -75,15 +79,29 @@ always_comb begin
             b_data = 8'b11111111;
         end
         else begin
-            r_data = bg_r_pixel;
-            g_data = bg_g_pixel;
-            b_data = bg_b_pixel;
+            if(i_finished) begin
+                r_data = sb_r_pixel;
+                g_data = sb_g_pixel;
+                b_data = sb_b_pixel;
+			end
+            else begin
+                r_data = bg_r_pixel;
+                g_data = bg_g_pixel;
+                b_data = bg_b_pixel;
+            end
         end
 	end
 	else begin
-		r_data = bg_r_pixel;
-		g_data = bg_g_pixel;
-		b_data = bg_b_pixel;
+		if(i_finished) begin
+            r_data = sb_r_pixel;
+            g_data = sb_g_pixel;
+            b_data = sb_b_pixel;
+		end
+        else begin
+                r_data = bg_r_pixel;
+                g_data = bg_g_pixel;
+                b_data = bg_b_pixel;
+        end
 	end
 end
 endmodule

@@ -209,6 +209,7 @@ Display display_instance (
 	.i_finished(finished),
 	.i_hands_num(hands_num),
 	.i_select_color(select_color),
+	.i_score(score),
     .VGA_B(VGA_B),
     .VGA_BLANK_N(VGA_BLANK_N),
     .VGA_CLK(VGA_CLK),
