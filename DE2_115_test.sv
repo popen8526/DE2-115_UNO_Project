@@ -171,7 +171,7 @@ keyboard_driver keyboard_driver_inst (
 );
 
 localparam S_INIT = 2'b00, S_HOLD = 2'b01, S_DONE = 2'b11;
-logic [2:0] state_1_w, state_1_r, state_2_w, state_2_r, state_3_w, state_3_r, state_4_w, state_4_r, prev_key_r, prev_key_w;
+logic [1:0] state_1_w, state_1_r, state_2_w, state_2_r, state_3_w, state_3_r, state_4_w, state_4_r, prev_key_r, prev_key_w;
 // logic [5:0] hands_w [108:0];
 // logic [5:0] hands_r [108:0];
 // logic [6:0] hands_num [3:0];
@@ -373,14 +373,12 @@ always_ff @(posedge i_clk_1M or negedge i_rst_n) begin
 		state_1_r <= S_INIT;
 		state_2_r <= S_INIT;
 		state_3_r <= S_INIT;
-		state_4_r <= S_INIT;
 		prev_key_r <= 0;
 	end
 	else begin
 		state_1_r <= state_1_w;
 		state_2_r <= state_2_w;
 		state_3_r <= state_3_w;
-		state_4_r <= state_4_w;
 		prev_key_r <= prev_key_w;
 	end
 end
