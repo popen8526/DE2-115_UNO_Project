@@ -188,7 +188,7 @@ logic [4:0]  player_state;
 logic [4:0]  com0_state;
 logic [4:0]  com1_state;
 logic [4:0]  com2_state;
-logic [4:0]  uno_state;
+logic [3:0]  uno_state;
 logic [4:0]  deck_state_1;
 logic [4:0]  deck_state_2;
 
@@ -210,6 +210,7 @@ Display display_instance (
 	.i_hands_num(hands_num),
 	.i_select_color(select_color),
 	.i_score(score),
+	.i_uno_state(uno_state),
     .VGA_B(VGA_B),
     .VGA_BLANK_N(VGA_BLANK_N),
     .VGA_CLK(VGA_CLK),

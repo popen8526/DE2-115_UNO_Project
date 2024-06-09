@@ -75,7 +75,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
     assign o_com2_state = com2_state;
     assign o_deck_state_1 = deck_state_1;
     assign o_deck_state_2 = deck_state_2;
-    assign o_uno_state = state_r;
+    assign o_uno_state = {com2_turn, com1_turn, com0_turn, p0_turn};
     
     Deck Deck(
         .i_clk(i_clk),

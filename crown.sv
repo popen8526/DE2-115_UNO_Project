@@ -63,15 +63,9 @@ parameter [0:49][79:0] picture = {
 };
 always_comb begin
 	if((x_pin <= x_cnt && x_cnt <= x_pin + X_WIDTH) && (y_pin <= y_cnt && y_cnt <= y_pin + Y_WIDTH)) begin
-		// r_data = r_picture[(y_cnt - y_pin)/5][((x_cnt - x_pin)/5)<<3 +: 8];
-		// g_data = g_picture[(y_cnt - y_pin)/5][((x_cnt - x_pin)/5)<<3 +: 8];
-		// b_data = b_picture[(y_cnt - y_pin)/5][((x_cnt - x_pin)/5)<<3 +: 8];
 		r_data = {8{picture[(y_cnt - y_pin)][((x_cnt - x_pin))]}};
 		g_data = {8{picture[(y_cnt - y_pin)][((x_cnt - x_pin))]}};
 		b_data = {8{picture[(y_cnt - y_pin)][((x_cnt - x_pin))]}};
-		// r_data = 8'b0;
-		// g_data = 8'b0;
-		// b_data = 8'b0;
 	end
 	else begin
 		r_data = 8'b0;
