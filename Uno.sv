@@ -23,7 +23,8 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
     localparam S_COM0_BUFF = 4'd11;
     localparam S_COM1_BUFF = 4'd12;
     localparam S_COM2_BUFF = 4'd13;
-    localparam S_END       = 4'd14;
+    localparam S_CHECK_END = 4'd14;
+    localparam S_END       = 4'd15;
     
     logic [ 3:0] state_w, state_r;
     // wire definition for deck
@@ -320,7 +321,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                     last_card_w = p0_pcard;
                     reversed_w = reversed_r ^ (p0_pcard[3:0] == 4'd11);
                     if(o_hand_num[0] == 7'd0) begin
-                        state_w = S_END;
+                        state_w = S_CHECK_END;
                         draw_num_w = 3'b000;
                     end
                     else begin
@@ -417,7 +418,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                     last_card_w = com0_pcard;
                     reversed_w = reversed_r ^ (com0_pcard[3:0] == 4'd11);
                     if(o_hand_num[1] == 7'd0) begin
-                        state_w = S_END;
+                        state_w = S_CHECK_END;
                         draw_num_w = 3'b000;
                     end
                     else begin
@@ -514,7 +515,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                     last_card_w = com1_pcard;
                     reversed_w = reversed_r ^ (com1_pcard[3:0] == 4'd11);
                     if(o_hand_num[2] == 7'd0) begin
-                        state_w = S_END;
+                        state_w = S_CHECK_END;
                         draw_num_w = 3'b000;
                     end
                     else begin
@@ -616,7 +617,7 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                     last_card_w = com2_pcard;
                     reversed_w = reversed_r ^ (com2_pcard[3:0] == 4'd11);
                     if(o_hand_num[3] == 7'd0) begin
-                        state_w = S_END;
+                        state_w = S_CHECK_END;
                         draw_num_w = 3'b000;
                     end
                     else begin
@@ -712,10 +713,18 @@ module Uno(i_clk, i_rst_n, i_start, i_left, i_right, i_select, o_hand_num, o_sco
                     draw_num_w = 0;
                 end
             end
+            S_CHECK_END: begin
+                finish = 0;
+                if(i_start) begin
+                    state_w = S_END;
+                end
+                else begin
+                    state_w = S_CHECK_END;
+                end
+            end
             S_END: begin
                 finish = 1'b1;
-                if(!i_start)    state_w = S_IDLE;
-                else            state_w = S_END;
+                state_w = S_END;
             end
         endcase
     end
