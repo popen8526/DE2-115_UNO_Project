@@ -10,6 +10,9 @@ module Display(
     input  [10:0] i_score [3:0], 
     input  [3:0]  i_uno_state,
     input         i_start,
+    input         i_reverse,
+    input         i_replay,  
+    input         [5:0] i_rank [3:0],
     output [7:0] VGA_B,
     output VGA_BLANK_N,
     output VGA_CLK,
@@ -23,7 +26,7 @@ module Display(
     logic [7:0] pixel          [2:0];
     logic [9:0] x_cnt, y_cnt, bg_x_pin, bg_y_pin, Index_x_pin_w, Index_x_pin_r, Index_y_pin_w, Index_y_pin_r, Index_2_x_pin_w, Index_2_x_pin_r, Index_2_y_pin_w, Index_2_y_pin_r;
     logic [9:0] current_x_pin, current_y_pin, prev_card_x_pin, prev_card_y_pin, pure_x_pin, pure_y_pin, prev_x_pin, prev_y_pin, cr_x_pin, cr_y_pin;
-    logic [7:0] bg_r_pixel, bg_g_pixel, bg_b_pixel, sb_r_pixel, sb_g_pixel, sb_b_pixel, ce_r_pixel, ce_g_pixel, ce_b_pixel, cr_r_pixel, cr_g_pixel, cr_b_pixel, cl_r_pixel, cl_g_pixel, cl_b_pixel, start_r_pixel, start_g_pixel, start_b_pixel;
+    logic [7:0] bg_r_pixel, bg_g_pixel, bg_b_pixel, sb_r_pixel, sb_g_pixel, sb_b_pixel, ce_r_pixel, ce_g_pixel, ce_b_pixel, cr_r_pixel, cr_g_pixel, cr_b_pixel, cl_r_pixel, cl_g_pixel, cl_b_pixel, start_r_pixel, start_g_pixel, start_b_pixel, arrow_r, arrow_g, arrow_b;
     logic [7:0] Index_r_pixel, Index_g_pixel, Index_b_pixel, pure_r_pixel, pure_g_pixel, pure_b_pixel, Index_2_r_pixel, Index_2_g_pixel, Index_2_b_pixel;
     logic [7:0] draw_card_r_pixel;
     logic [7:0] draw_card_g_pixel;
@@ -70,9 +73,27 @@ module Display(
     logic [9:0] digits_2_y_pin [2:0];
     logic [9:0] digits_3_x_pin [2:0];
     logic [9:0] digits_3_y_pin [2:0];
+    logic [9:0] digits_rank_0_x_pin [1:0];
+    logic [9:0] digits_rank_0_y_pin [1:0];
+    logic [9:0] digits_rank_1_x_pin [1:0];
+    logic [9:0] digits_rank_1_y_pin [1:0];
+    logic [9:0] digits_rank_2_x_pin [1:0];
+    logic [9:0] digits_rank_2_y_pin [1:0];
+    logic [9:0] digits_rank_3_x_pin [1:0];
+    logic [9:0] digits_rank_3_y_pin [1:0];
+    logic [7:0] digits_rank_0_one_pixel [2:0];
+    logic [7:0] digits_rank_0_ten_pixel [2:0];
+    logic [7:0] digits_rank_1_one_pixel [2:0];
+    logic [7:0] digits_rank_1_ten_pixel [2:0];
+    logic [7:0] digits_rank_2_one_pixel [2:0];
+    logic [7:0] digits_rank_2_ten_pixel [2:0];
+    logic [7:0] digits_rank_3_one_pixel [2:0];
+    logic [7:0] digits_rank_3_ten_pixel [2:0];
     logic       init_pict_w, init_pict_r;
     logic [27:0] counter_w, counter_r;
 
+    // 200~400
+    // 165~365
 
     // logic [12:0] red_in_use, yellow_in_use, green_in_use, blue_in_use;
     // logic        wild_in_use, wild_draw_four_in_use;
@@ -136,6 +157,23 @@ module Display(
     assign digits_3_y_pin[1] = (i_finished) ? 381 : 60;
     assign digits_3_x_pin[2] = (i_finished) ? 555 : 0;
     assign digits_3_y_pin[2] = (i_finished) ? 381 : 0;
+    assign digits_rank_0_x_pin[0] = (i_finished) ? 710 : 0;
+    assign digits_rank_0_y_pin[0] = (i_finished) ? 186 : 0;
+    assign digits_rank_0_x_pin[1] = (i_finished) ? 680 : 0;
+    assign digits_rank_0_y_pin[1] = (i_finished) ? 186 : 0;
+    assign digits_rank_1_x_pin[0] = (i_finished) ? 710 : 0;
+    assign digits_rank_1_y_pin[0] = (i_finished) ? 251 : 0;
+    assign digits_rank_1_x_pin[1] = (i_finished) ? 680 : 0;
+    assign digits_rank_1_y_pin[1] = (i_finished) ? 251 : 0;
+    assign digits_rank_2_x_pin[0] = (i_finished) ? 710 : 0;
+    assign digits_rank_2_y_pin[0] = (i_finished) ? 316 : 0;
+    assign digits_rank_2_x_pin[1] = (i_finished) ? 680 : 0;
+    assign digits_rank_2_y_pin[1] = (i_finished) ? 316 : 0;
+    assign digits_rank_3_x_pin[0] = (i_finished) ? 710 : 0;
+    assign digits_rank_3_y_pin[0] = (i_finished) ? 381 : 0;
+    assign digits_rank_3_x_pin[1] = (i_finished) ? 680 : 0;
+    assign digits_rank_3_y_pin[1] = (i_finished) ? 381 : 0;
+
     genvar j;
     generate
         for (j = 0; j < 15; j++) begin : gen_card_pins
@@ -147,7 +185,6 @@ module Display(
     vga vga_instance (
         .i_rst_n(i_rst_n),
         .i_clk_25M(i_clk_25M),
-        // .i_start_display((0 <= x_cnt && x_cnt < 80) && (0 <= y_cnt && y_cnt < 52)),
         .in_pixel(pixel),
         .VGA_B(VGA_B),
         .VGA_BLANK_N(VGA_BLANK_N),
@@ -233,6 +270,19 @@ module Display(
         .r_data(start_r_pixel),
         .g_data(start_g_pixel),
         .b_data(start_b_pixel)
+    );
+    arrow arrow_instance (
+        .x_cnt(x_cnt),
+        .y_cnt(y_cnt),
+        .x_pin(360),
+        .y_pin(165),
+        .r_data(arrow_r),
+        .g_data(arrow_g),
+        .b_data(arrow_b),
+        .bg_r_pixel(bg_r_pixel),
+        .bg_g_pixel(bg_g_pixel),
+        .bg_b_pixel(bg_b_pixel),
+        .i_reverse(i_reverse)
     );
     draw_card draw_card_instance (
         .x_cnt(x_cnt),
@@ -471,6 +521,158 @@ module Display(
         .g_data(digits_g_hundred[3]),
         .b_data(digits_b_hundred[3])
     );
+    digits digits_instance_rank_0_one(
+        .number(i_rank[0] - (i_rank[0]/10)*10),
+        .x_cnt(x_cnt),
+        .y_cnt(y_cnt),
+        .x_pin(digits_rank_0_x_pin[0]),
+        .y_pin(digits_rank_0_y_pin[0]),
+        .x_width(30),
+        .y_width(50),
+        .bg_r_pixel(bg_r_pixel),
+        .bg_g_pixel(bg_g_pixel),
+        .bg_b_pixel(bg_b_pixel),
+        .i_finished(i_finished),
+        .sb_r_pixel(sb_r_pixel),
+        .sb_g_pixel(sb_g_pixel),
+        .sb_b_pixel(sb_b_pixel),
+        .r_data(digits_rank_0_one_pixel[0]),
+        .g_data(digits_rank_0_one_pixel[1]),
+        .b_data(digits_rank_0_one_pixel[2])
+    );
+    digits digits_instance_rank_0_ten(
+        .number(i_rank[0]/10),
+        .x_cnt(x_cnt),
+        .y_cnt(y_cnt),
+        .x_pin(digits_rank_0_x_pin[1]),
+        .y_pin(digits_rank_0_y_pin[1]),
+        .x_width(30),
+        .y_width(50),
+        .bg_r_pixel(bg_r_pixel),
+        .bg_g_pixel(bg_g_pixel),
+        .bg_b_pixel(bg_b_pixel),
+        .i_finished(i_finished),
+        .sb_r_pixel(sb_r_pixel),
+        .sb_g_pixel(sb_g_pixel),
+        .sb_b_pixel(sb_b_pixel),
+        .r_data(digits_rank_0_ten_pixel[0]),
+        .g_data(digits_rank_0_ten_pixel[1]),
+        .b_data(digits_rank_0_ten_pixel[2])
+    );
+    digits digits_instance_rank_1_one(
+        .number(i_rank[1] - (i_rank[1]/10)*10),
+        .x_cnt(x_cnt),
+        .y_cnt(y_cnt),
+        .x_pin(digits_rank_1_x_pin[0]),
+        .y_pin(digits_rank_1_y_pin[0]),
+        .x_width(30),
+        .y_width(50),
+        .bg_r_pixel(bg_r_pixel),
+        .bg_g_pixel(bg_g_pixel),
+        .bg_b_pixel(bg_b_pixel),
+        .i_finished(i_finished),
+        .sb_r_pixel(sb_r_pixel),
+        .sb_g_pixel(sb_g_pixel),
+        .sb_b_pixel(sb_b_pixel),
+        .r_data(digits_rank_1_one_pixel[0]),
+        .g_data(digits_rank_1_one_pixel[1]),
+        .b_data(digits_rank_1_one_pixel[2])
+    );
+    digits digits_instance_rank_1_ten(
+        .number(i_rank[1]/10),
+        .x_cnt(x_cnt),
+        .y_cnt(y_cnt),
+        .x_pin(digits_rank_1_x_pin[1]),
+        .y_pin(digits_rank_1_y_pin[1]),
+        .x_width(30),
+        .y_width(50),
+        .bg_r_pixel(bg_r_pixel),
+        .bg_g_pixel(bg_g_pixel),
+        .bg_b_pixel(bg_b_pixel),
+        .i_finished(i_finished),
+        .sb_r_pixel(sb_r_pixel),
+        .sb_g_pixel(sb_g_pixel),
+        .sb_b_pixel(sb_b_pixel),
+        .r_data(digits_rank_1_ten_pixel[0]),
+        .g_data(digits_rank_1_ten_pixel[1]),
+        .b_data(digits_rank_1_ten_pixel[2])
+    );
+    digits digits_instance_rank_2_one(
+        .number(i_rank[2] - (i_rank[2]/10)*10),
+        .x_cnt(x_cnt),
+        .y_cnt(y_cnt),
+        .x_pin(digits_rank_2_x_pin[0]),
+        .y_pin(digits_rank_2_y_pin[0]),
+        .x_width(30),
+        .y_width(50),
+        .bg_r_pixel(bg_r_pixel),
+        .bg_g_pixel(bg_g_pixel),
+        .bg_b_pixel(bg_b_pixel),
+        .i_finished(i_finished),
+        .sb_r_pixel(sb_r_pixel),
+        .sb_g_pixel(sb_g_pixel),
+        .sb_b_pixel(sb_b_pixel),
+        .r_data(digits_rank_2_one_pixel[0]),
+        .g_data(digits_rank_2_one_pixel[1]),
+        .b_data(digits_rank_2_one_pixel[2])
+    );
+    digits digits_instance_rank_2_ten(
+        .number(i_rank[2]/10),
+        .x_cnt(x_cnt),
+        .y_cnt(y_cnt),
+        .x_pin(digits_rank_2_x_pin[1]),
+        .y_pin(digits_rank_2_y_pin[1]),
+        .x_width(30),
+        .y_width(50),
+        .bg_r_pixel(bg_r_pixel),
+        .bg_g_pixel(bg_g_pixel),
+        .bg_b_pixel(bg_b_pixel),
+        .i_finished(i_finished),
+        .sb_r_pixel(sb_r_pixel),
+        .sb_g_pixel(sb_g_pixel),
+        .sb_b_pixel(sb_b_pixel),
+        .r_data(digits_rank_2_ten_pixel[0]),
+        .g_data(digits_rank_2_ten_pixel[1]),
+        .b_data(digits_rank_2_ten_pixel[2])
+    );
+    digits digits_instance_rank_3_one(
+        .number(i_rank[3] - (i_rank[3]/10)*10),
+        .x_cnt(x_cnt),
+        .y_cnt(y_cnt),
+        .x_pin(digits_rank_3_x_pin[0]),
+        .y_pin(digits_rank_3_y_pin[0]),
+        .x_width(30),
+        .y_width(50),
+        .bg_r_pixel(bg_r_pixel),
+        .bg_g_pixel(bg_g_pixel),
+        .bg_b_pixel(bg_b_pixel),
+        .i_finished(i_finished),
+        .sb_r_pixel(sb_r_pixel),
+        .sb_g_pixel(sb_g_pixel),
+        .sb_b_pixel(sb_b_pixel),
+        .r_data(digits_rank_3_one_pixel[0]),
+        .g_data(digits_rank_3_one_pixel[1]),
+        .b_data(digits_rank_3_one_pixel[2])
+    );
+    digits digits_instance_rank_3_ten(
+        .number(i_rank[3]/10),
+        .x_cnt(x_cnt),
+        .y_cnt(y_cnt),
+        .x_pin(digits_rank_3_x_pin[1]),
+        .y_pin(digits_rank_3_y_pin[1]),
+        .x_width(30),
+        .y_width(50),
+        .bg_r_pixel(bg_r_pixel),
+        .bg_g_pixel(bg_g_pixel),
+        .bg_b_pixel(bg_b_pixel),
+        .i_finished(i_finished),
+        .sb_r_pixel(sb_r_pixel),
+        .sb_g_pixel(sb_g_pixel),
+        .sb_b_pixel(sb_b_pixel),
+        .r_data(digits_rank_3_ten_pixel[0]),
+        .g_data(digits_rank_3_ten_pixel[1]),
+        .b_data(digits_rank_3_ten_pixel[2])
+    );
 // 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9
 // 10: skip, 11: reverse, 12: draw two, 13: wild, 14: wild draw four
     zero zero_instance(
@@ -651,13 +853,8 @@ module Display(
         .b_data(cr_b_pixel)
     );
     always_comb begin
-        if((i_hands_num[0] == 0) || (i_hands_num[1] == 0) || (i_hands_num[2] == 0) || (i_hands_num[3] == 0)) begin
-            if(!counter_r[27])  counter_w = counter_r + 1;
-            else                counter_w = counter_r;
-        end
-        else begin
-            counter_w = counter_r;
-        end
+        if(!counter_r[27])  counter_w = counter_r + 1;
+        else                counter_w = counter_r;
     end
     always_comb begin
         Index_y_pin_w = 10'd470;
@@ -780,6 +977,46 @@ module Display(
                 pixel[1] = digits_g_hundred[3];
                 pixel[2] = digits_b_hundred[3];
             end
+            else if((digits_rank_0_x_pin[0] <= x_cnt && x_cnt < digits_rank_0_x_pin[0] + 30) && (digits_rank_0_y_pin[0] <= y_cnt && y_cnt < digits_rank_0_y_pin[0] + 50)) begin
+                pixel[0] = digits_rank_0_one_pixel[0];
+                pixel[1] = digits_rank_0_one_pixel[1];
+                pixel[2] = digits_rank_0_one_pixel[2];
+            end
+            else if((digits_rank_0_x_pin[1] <= x_cnt && x_cnt < digits_rank_0_x_pin[1] + 30) && (digits_rank_0_y_pin[1] <= y_cnt && y_cnt < digits_rank_0_y_pin[1] + 50)) begin
+                pixel[0] = digits_rank_0_ten_pixel[0];
+                pixel[1] = digits_rank_0_ten_pixel[1];
+                pixel[2] = digits_rank_0_ten_pixel[2];
+            end
+            else if((digits_rank_1_x_pin[0] <= x_cnt && x_cnt < digits_rank_1_x_pin[0] + 30) && (digits_rank_1_y_pin[0] <= y_cnt && y_cnt < digits_rank_1_y_pin[0] + 50))  begin
+                pixel[0] = digits_rank_1_one_pixel[0];
+                pixel[1] = digits_rank_1_one_pixel[1];
+                pixel[2] = digits_rank_1_one_pixel[2];
+            end
+            else if((digits_rank_1_x_pin[1] <= x_cnt && x_cnt < digits_rank_1_x_pin[1] + 30) && (digits_rank_1_y_pin[1] <= y_cnt && y_cnt < digits_rank_1_y_pin[1] + 50))  begin
+                pixel[0] = digits_rank_1_ten_pixel[0];
+                pixel[1] = digits_rank_1_ten_pixel[1];
+                pixel[2] = digits_rank_1_ten_pixel[2];
+            end
+            else if((digits_rank_2_x_pin[0] <= x_cnt && x_cnt < digits_rank_2_x_pin[0] + 30) && (digits_rank_2_y_pin[0] <= y_cnt && y_cnt < digits_rank_2_y_pin[0] + 50))  begin
+                pixel[0] = digits_rank_2_one_pixel[0];
+                pixel[1] = digits_rank_2_one_pixel[1];
+                pixel[2] = digits_rank_2_one_pixel[2];
+            end
+            else if((digits_rank_2_x_pin[1] <= x_cnt && x_cnt < digits_rank_2_x_pin[1] + 30) && (digits_rank_2_y_pin[1] <= y_cnt && y_cnt < digits_rank_2_y_pin[1] + 50))  begin
+                pixel[0] = digits_rank_2_ten_pixel[0];
+                pixel[1] = digits_rank_2_ten_pixel[1];
+                pixel[2] = digits_rank_2_ten_pixel[2];
+            end
+            else if((digits_rank_3_x_pin[0] <= x_cnt && x_cnt < digits_rank_3_x_pin[0] + 30) && (digits_rank_3_y_pin[0] <= y_cnt && y_cnt < digits_rank_3_y_pin[0] + 50))  begin
+                pixel[0] = digits_rank_3_one_pixel[0];
+                pixel[1] = digits_rank_3_one_pixel[1];
+                pixel[2] = digits_rank_3_one_pixel[2];
+            end
+            else if((digits_rank_3_x_pin[1] <= x_cnt && x_cnt < digits_rank_3_x_pin[1] + 30) && (digits_rank_3_y_pin[1] <= y_cnt && y_cnt < digits_rank_3_y_pin[1] + 50))  begin
+                pixel[0] = digits_rank_3_ten_pixel[0];
+                pixel[1] = digits_rank_3_ten_pixel[1];
+                pixel[2] = digits_rank_3_ten_pixel[2];
+            end
             else begin
                 pixel[0] = sb_r_pixel;
                 pixel[1] = sb_g_pixel;
@@ -805,14 +1042,17 @@ module Display(
                 pixel[0] = start_r_pixel;
                 pixel[1] = start_g_pixel;
                 pixel[2] = start_b_pixel;
-                if(i_start)  init_pict_w = 1'b1;
+                if(i_start) begin
+                    init_pict_w = 1'b1;
+                end
                 else         init_pict_w = 1'b0;
             end
             else begin
                 pixel[0] = ce_r_pixel;
                 pixel[1] = ce_g_pixel;
                 pixel[2] = ce_b_pixel;
-                init_pict_w = init_pict_r;
+                if(i_replay) init_pict_w = 1'b0;
+                else         init_pict_w = init_pict_r;
             end
         end
         else if ((Index_2_x_pin_r <= x_cnt && x_cnt < Index_2_x_pin_r + 60) && (Index_2_y_pin_r <= y_cnt && y_cnt < Index_2_y_pin_r + 10)) begin
@@ -1019,6 +1259,17 @@ module Display(
             pixel[0] = digits_r_ten[3];
             pixel[1] = digits_g_ten[3];
             pixel[2] = digits_b_ten[3];
+            color = 2'b00;
+            select_color = 3'b000;
+            cr_x_pin = 10'd0;
+            cr_y_pin = 10'd0;
+            current_x_pin = 0;
+            current_y_pin = 0;
+        end
+        else if((360 <= x_cnt && x_cnt < 560) && (165 <= y_cnt && y_cnt < 365)) begin
+            pixel[0] = arrow_r;
+            pixel[1] = arrow_g;
+            pixel[2] = arrow_b;
             color = 2'b00;
             select_color = 3'b000;
             cr_x_pin = 10'd0;

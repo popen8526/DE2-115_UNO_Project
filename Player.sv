@@ -801,12 +801,10 @@ module Player(i_clk, i_rst_n, i_init, i_punish, i_left, i_right, i_select, i_sta
                         if(hands_r[index_r][3:0] == 4'd13) begin
                             state_w = S_CHOOSE;
                             out_card_w = {2'b00, 4'd13};
-                            wild_num_w = wild_num_r - 1;
                         end
                         else if(hands_r[index_r][3:0] == 4'd14) begin
                             state_w = S_CHOOSE;
                             out_card_w = {2'b00, 4'd14};
-                            wildf_num_w = wildf_num_r - 1;
                         end
                         else if(hands_r[index_r][5:4] == i_prev_card[5:4] || hands_r[index_r][3:0] == i_prev_card[3:0]) begin
                             case (hands_r[index_r][5:4])
@@ -1022,6 +1020,12 @@ module Player(i_clk, i_rst_n, i_init, i_punish, i_left, i_right, i_select, i_sta
                     state_w = S_OUT;
                     out_card_w = {index_r[1:0], out_card_r[3:0]};
                     score_w = score_r - 50;
+                    if(out_card_r[3:0] == 4'd13) begin
+                        wild_num_w = wild_num_r - 1;
+                    end
+                    else begin
+                        wildf_num_w = wildf_num_r - 1;
+                    end
                 end
                 else begin
                     state_w = S_CHOOSE;

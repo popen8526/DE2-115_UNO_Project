@@ -150,6 +150,7 @@ assign alter_key_2 = (char == 8'h5a);
 assign alter_key_3 = (char == 8'h15);
 assign start_key = (char == 8'h29);
 assign uno_key = (char == 8'h3c);
+assign reset_key = (char == 8'h2d);
 
 // TODO: Using Qsys to generate PLL to create "i_clk_25M"
 audio audio_inst (
@@ -165,7 +166,7 @@ audio audio_inst (
 keyboard_driver keyboard_driver_inst (
 	.CLOCK_50(CLOCK_50),
 	.PS2_CLK(PS2_CLK),
-	.i_rst_n(i_rst_n),
+	.i_rst_n(i_rst_n && replay),
 	.PS2_DAT(PS2_DAT),
 	.LEDG(LEDG),
 	.LEDR(LEDR),
@@ -173,7 +174,8 @@ keyboard_driver keyboard_driver_inst (
 );
 
 localparam S_INIT = 2'b00, S_HOLD = 2'b01, S_DONE = 2'b11;
-logic [2:0] state_1_w, state_1_r, state_2_w, state_2_r, state_3_w, state_3_r, state_4_w, state_4_r, state_5_w, state_5_r, prev_key_r, prev_key_w;
+logic [2:0] state_1_w, state_1_r, state_2_w, state_2_r, state_3_w, state_3_r;
+logic [2:0] state_4_w, state_4_r, state_5_w, state_5_r, state_6_w, state_6_r, prev_key_r, prev_key_w;
 // logic [5:0] hands_w [108:0];
 // logic [5:0] hands_r [108:0];
 // logic [6:0] hands_num [3:0];
@@ -184,7 +186,7 @@ logic [4:0] prev_card_w, prev_card_r;
 // logic [7:0] local_index;
 // logic [6:0] hands_num_w [3:0];
 // logic [6:0] hands_num_r [3:0];
-wire key1down, key2down, key3down, start, uno;
+wire key1down, key2down, key3down, start, uno, replay, reverse;
 
 logic [4:0]  player_state;
 logic [4:0]  com0_state;
@@ -200,6 +202,8 @@ logic [10:0] score [3:0];
 logic [5:0] prev_card;
 logic [6:0] index;
 logic finished, select_color;
+logic [5:0] sorted_rank_w [3:0];
+logic [5:0] sorted_rank_r [3:0];
 assign hands[108] = 6'b001111;
 
 Display display_instance (
@@ -222,12 +226,15 @@ Display display_instance (
     .VGA_R(VGA_R),
     .VGA_SYNC_N(VGA_SYNC_N),
     .VGA_VS(VGA_VS),
-	.o_local_index(local_index)
+	.o_local_index(local_index),
+	.i_reverse(reverse),
+	.i_replay(!replay),
+	.i_rank(sorted_rank_r)
 );
 
 Uno uno_instance (
 	.i_clk(i_clk_1M),
-	.i_rst_n(i_rst_n),
+	.i_rst_n(i_rst_n && replay),
 	.i_start(start),
 	.i_left(key3down),
 	.i_right(key1down),
@@ -246,7 +253,8 @@ Uno uno_instance (
 	.o_deck_state_1(deck_state_1), 
 	.o_deck_state_2(deck_state_2),
 	.o_select(select_color),
-	.o_uno_state(uno_state[3:0])
+	.o_uno_state(uno_state[3:0]),
+	.o_reverse(reverse)
 );
 
 
@@ -374,7 +382,28 @@ always_comb begin
 		S_DONE: begin
 			uno = 0;
 			if(~uno_key)	state_5_w = S_INIT;
-			else 				state_5_w = S_DONE;
+			else 			state_5_w = S_DONE;
+		end
+	endcase
+	case(state_6_r)
+		S_INIT: begin
+			if(reset_key)	begin
+				state_6_w = S_HOLD;
+				replay = 1;
+			end
+			else begin
+				state_6_w = S_INIT;
+				replay = 1;
+			end
+		end
+		S_HOLD: begin
+			state_6_w = S_DONE;
+			replay = (prev_key_r == 6) ? 0 : 1;
+		end
+		S_DONE: begin
+			replay = 1;
+			if(~reset_key)	state_6_w = S_INIT;
+			else 			state_6_w = S_DONE;
 		end
 	endcase
 end
@@ -394,59 +423,130 @@ always_comb begin
 	else if(state_5_r == S_HOLD)begin
 		prev_key_w = 5;
 	end
+	else if(state_6_r == S_HOLD)begin
+		prev_key_w = 6;
+	end
 	else begin
 		prev_key_w = prev_key_r;
 	end
 end
+
+localparam S_IDLE = 2'b00, S_SORT = 2'b01, S_END = 2'b10;
+logic [2:0] state_w, state_r, i_iter_w, i_iter_r, j_iter_w, j_iter_r;
+always_comb begin
+	for(int i = 0; i < 4; i = i + 1) begin
+		sorted_rank_w[i] = sorted_rank_r[i];
+	end
+	case(state_r)
+		S_IDLE: begin
+			if(finished) begin
+				state_w = S_SORT;
+				sorted_rank_w[0] = sorted_rank_r[0];
+				sorted_rank_w[1] = sorted_rank_r[1];
+				sorted_rank_w[2] = sorted_rank_r[2];
+				sorted_rank_w[3] = sorted_rank_r[3];
+				i_iter_w = 0;
+				j_iter_w = 3;
+			end
+			else begin
+				state_w = S_IDLE;
+				i_iter_w = 0;
+				j_iter_w = 3;
+			end
+		end
+		S_SORT: begin
+			state_w = (j_iter_r == 1) ? S_END : S_SORT;
+			i_iter_w = (i_iter_r == j_iter_r - 1) ? 0 : i_iter_r + 1;
+			j_iter_w = (i_iter_r == j_iter_r - 1) ? j_iter_r - 1 : j_iter_r;
+			if (score[i_iter_r] < score[j_iter_r]) begin
+				sorted_rank_w[i_iter_r] = sorted_rank_r[i_iter_r] + 1;
+				sorted_rank_w[j_iter_r] = sorted_rank_r[j_iter_r];
+			end 
+			else if ((score[i_iter_r] > score[j_iter_r])) begin
+				sorted_rank_w[i_iter_r] = sorted_rank_r[i_iter_r];
+				sorted_rank_w[j_iter_r] = sorted_rank_r[j_iter_r] + 1;
+			end
+			else begin
+				sorted_rank_w[i_iter_r] = sorted_rank_r[i_iter_r] + 1;
+				sorted_rank_w[j_iter_r] = sorted_rank_r[j_iter_r] + 1;
+			end
+		end
+		S_END: begin
+			state_w = (!finished) ? S_IDLE : S_END;
+			i_iter_w = 0;
+			j_iter_w = 3;
+		end
+		default: begin
+        	state_w = S_IDLE;  // Add a default assignment for state_w
+			i_iter_w = 0;
+			j_iter_w = 3;
+    	end
+	endcase
+end
 always_ff @(posedge i_clk_1M or negedge i_rst_n) begin
 	if(~i_rst_n) begin
+		state_r <= S_IDLE;
 		state_1_r <= S_INIT;
 		state_2_r <= S_INIT;
 		state_3_r <= S_INIT;
 		state_4_r <= S_INIT;
 		state_5_r <= S_INIT;
+		state_6_r <= S_INIT;
+		for(int i = 0; i < 4; i = i + 1) begin
+			sorted_rank_r[i] = 0;
+		end
 		prev_key_r <= 0;
+		j_iter_r <= 3;
+		i_iter_r <= 0;
 	end
 	else begin
+		state_r <= state_w;
 		state_1_r <= state_1_w;
 		state_2_r <= state_2_w;
 		state_3_r <= state_3_w;
 		state_4_r <= state_4_w;
 		state_5_r <= state_5_w;
+		state_6_r <= state_6_w;
+		for(int i = 0; i < 4; i = i + 1) begin
+			sorted_rank_r[i] = sorted_rank_w[i];
+		end
 		prev_key_r <= prev_key_w;
+		j_iter_r <= j_iter_w;
+		i_iter_r <= i_iter_w;
 	end
 end
 SevenHexDecoder seven_dec0(
-.i_hex(prev_card_r),
+.i_hex(j_iter_r),
+// .i_hex(state_r),
 .o_seven_ten(HEX1),
 .o_seven_one(HEX0)
 );
-// SevenHexDecoder seven_dec1(
-// .i_hex(com_1_state),
-// .o_seven_ten(HEX3),
-// .o_seven_one(HEX2)
-// );
+SevenHexDecoder seven_dec1(
+.i_hex(state_r),
+.o_seven_ten(HEX3),
+.o_seven_one(HEX2)
+);
 
-// SevenHexDecoder seven_dec2(
-// .i_hex(com2_state),
-// .o_seven_ten(HEX5),
-// .o_seven_one(HEX4)
-// );
+SevenHexDecoder seven_dec2(
+.i_hex(sorted_rank_r[2]),
+.o_seven_ten(HEX5),
+.o_seven_one(HEX4)
+);
 
-// SevenHexDecoder seven_dec3(
-// .i_hex(uno_state),
-// .o_seven_ten(HEX7),
-// .o_seven_one(HEX6)
-// );
+SevenHexDecoder seven_dec3(
+.i_hex(sorted_rank_r[3]),
+.o_seven_ten(HEX7),
+.o_seven_one(HEX6)
+);
  
 
 // comment those are use for display
 // assign HEX0 = '1;
 // assign HEX1 = '1;
-assign HEX2 = '1;
-assign HEX3 = '1;
-assign HEX4 = '1;
-assign HEX5 = '1;
-assign HEX6 = '1;
-assign HEX7 = '1;
+//assign HEX2 = '1;
+//assign HEX3 = '1;
+//assign HEX4 = '1;
+//assign HEX5 = '1;
+//assign HEX6 = '1;
+//assign HEX7 = '1;
 endmodule

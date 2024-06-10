@@ -26,7 +26,7 @@ parameter startBit = 3'd0,
 always@(negedge dataClock) begin
     if (counter >= 26'd0_250_000 & S == update) begin
         en <= 1'b1;	 
-	     counter <= 0;
+	    counter <= 0;
 		  
 	 end else begin
 	     en <= 1'b0;

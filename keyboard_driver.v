@@ -14,7 +14,7 @@ module keyboard_driver(
 
 	reg [17:0]i; // for testing
 	
-	assign rst_n = i_rst_n;
+	assign rst = i_rst_n;
 	assign LEDG = char;
 	assign LEDR[17:0] = i;
 	
@@ -57,11 +57,10 @@ module keyboard_driver(
 		  
 		  end
 	 end
-	 
-	 
 	 always @(*) begin
 	     case (S) 
 		      start: begin
+					NS <= delay;
 				end
 				delay: begin
 				    if (en == 1'b1) 
