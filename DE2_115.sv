@@ -144,6 +144,7 @@ wire alter_key_2;
 wire alter_key_3;
 wire start_key;
 wire uno_key;
+wire [7:0] n;
 
 assign alter_key_1 = (char == 8'h24);
 assign alter_key_2 = (char == 8'h5a);
@@ -154,14 +155,14 @@ assign reset_key = (char == 8'h2d);
 
 // TODO: Using Qsys to generate PLL to create "i_clk_25M"
 audio audio_inst (
-    .altpll_1_c0_clk(i_clk_25M), // Connect the output clock
-    .altpll_1_inclk_interface_clk(CLOCK_50),
-    .altpll_1_inclk_interface_reset_reset(i_rst_n),
+    .altpll_2_c0_clk(i_clk_25M), // Connect the output clock
 	 .altpll_0_c0_clk(i_clk_1M),                      //                    altpll_0_c0.clk
-	 .altpll_0_inclk_interface_clk(CLOCK_50),         //       altpll_0_inclk_interface.clk
-	 .altpll_0_inclk_interface_reset_reset(i_rst_n)
+	.clk_clk(CLOCK_50),
+	.reset_reset_n(i_rst_n),
+	.uart_0_external_connection_rxd(UART_RXD),
+	.uart_0_external_connection_txd(UART_TXD),
+	.n_readdata(n)
 );
-
 
 keyboard_driver keyboard_driver_inst (
 	.CLOCK_50(CLOCK_50),
@@ -217,7 +218,7 @@ Display display_instance (
 	.i_select_color(select_color),
 	.i_score(score),
 	.i_uno_state(uno_state),
-	.i_start(start),
+	.i_start(start || vocal_space),
     .VGA_B(VGA_B),
     .VGA_BLANK_N(VGA_BLANK_N),
     .VGA_CLK(VGA_CLK),
@@ -234,12 +235,12 @@ Display display_instance (
 
 Uno uno_instance (
 	.i_clk(i_clk_1M),
-	.i_rst_n(i_rst_n && replay),
-	.i_start(start),
-	.i_left(key3down),
-	.i_right(key1down),
-	.i_select(key2down),
-	.i_uno(uno),
+	.i_rst_n(i_rst_n && replay && vocal_rst),
+	.i_start(start || vocal_space),
+	.i_left(key3down || vocal_q),
+	.i_right(key1down || vocal_e),
+	.i_select(key2down || vocal_enter),
+	.i_uno(uno || vocal_u),
 	.o_hand_num(hands_num),
 	.o_score(score),
 	.o_index(index),
@@ -515,38 +516,147 @@ always_ff @(posedge i_clk_1M or negedge i_rst_n) begin
 		i_iter_r <= i_iter_w;
 	end
 end
+
+
 SevenHexDecoder seven_dec0(
-.i_hex(j_iter_r),
+.i_hex(n[4:0]),
 // .i_hex(state_r),
 .o_seven_ten(HEX1),
 .o_seven_one(HEX0)
 );
-SevenHexDecoder seven_dec1(
-.i_hex(state_r),
-.o_seven_ten(HEX3),
-.o_seven_one(HEX2)
-);
+logic state_vocal_w, state_vocal_r;
+localparam S_IDLE_v = 1'b0, S_HOLD_v = 1'b1;
+logic [7:0] vocal_w, vocal_r;
+logic [7:0] vocal_q, vocal_e, vocal_enter, vocal_space, vocal_u, vocal_rst;
+assign vocal_w = n;
+// logic [7:0] counter_w, counter_r;
+always_comb begin
+	case(state_vocal_r) 
+		S_IDLE_v: begin
+			vocal_q = 0;
+			vocal_e = 0;
+			vocal_enter = 0;
+			vocal_space = 0;
+			vocal_u = 0;
+			vocal_rst = 1;
+			if(vocal_w != vocal_r) begin
+				state_vocal_w = S_HOLD_v;
+			end
+			else begin
+				state_vocal_w = S_IDLE_v;
+			end
+		end
+		S_HOLD_v: begin
+			state_vocal_w = S_IDLE_v;
+			case(vocal_r)
+				8'd1:begin 
+					vocal_q = 1;
+					vocal_e = 0;
+					vocal_enter = 0;
+					vocal_space = 0;
+					vocal_u = 0;
+					vocal_rst = 1;
+				end
+				8'd2:begin
+					vocal_q = 0;
+					vocal_e = 1;
+					vocal_enter = 0;
+					vocal_space = 0;
+					vocal_u = 0;
+					vocal_rst = 1;
+				end
+				8'd3:begin
+					vocal_q = 0;
+					vocal_e = 0;
+					vocal_enter = 1;
+					vocal_space = 0;
+					vocal_u = 0;
+					vocal_rst = 1;
+				end
+				8'd4:begin
+					vocal_q = 0;
+					vocal_e = 0;
+					vocal_enter = 0;
+					vocal_space = 1;
+					vocal_u = 0;
+					vocal_rst = 1;
+				end
+				8'd5:begin
+					vocal_q = 0;
+					vocal_e = 0;
+					vocal_enter = 0;
+					vocal_space = 0;
+					vocal_u = 0;
+					vocal_rst = 0;
+				end
+				8'd6:begin
+					vocal_q = 0;
+					vocal_e = 0;
+					vocal_enter = 0;
+					vocal_space = 0;
+					vocal_u = 1;
+					vocal_rst = 1;
+				end
+				default:begin
+					vocal_q = 0;
+					vocal_e = 0;
+					vocal_enter = 0;
+					vocal_space = 0;
+					vocal_u = 0;
+					vocal_rst = 1;
+				end
+			endcase
+		end
+		default: begin
+			state_vocal_w = S_IDLE_v;
+			vocal_q = 0;
+			vocal_e = 0;
+			vocal_enter = 0;
+			vocal_space = 0;
+			vocal_u = 0;
+			vocal_rst = 1;
+		end
+	endcase
+end
+always_ff @ (posedge i_clk_1M or negedge i_rst_n) begin
+	if(~i_rst_n) begin
+		// counter_r <= 0;
+		state_vocal_r <= S_IDLE_v;
+		vocal_r <= 0;
+	end
+	else begin
+		// counter_r <= counter_w;
+		state_vocal_r <= state_vocal_w;
+		vocal_r <= vocal_w;
+	end
+end
 
-SevenHexDecoder seven_dec2(
-.i_hex(sorted_rank_r[2]),
-.o_seven_ten(HEX5),
-.o_seven_one(HEX4)
-);
+// SevenHexDecoder seven_dec1(
+// .i_hex(counter_r[4:0]),
+// .o_seven_ten(HEX3),
+// .o_seven_one(HEX2)
+// );
 
-SevenHexDecoder seven_dec3(
-.i_hex(sorted_rank_r[3]),
-.o_seven_ten(HEX7),
-.o_seven_one(HEX6)
-);
+// SevenHexDecoder seven_dec2(
+// .i_hex(sorted_rank_r[2]),
+// .o_seven_ten(HEX5),
+// .o_seven_one(HEX4)
+// );
+
+// SevenHexDecoder seven_dec3(
+// .i_hex(sorted_rank_r[3]),
+// .o_seven_ten(HEX7),
+// .o_seven_one(HEX6)
+// );
  
 
 // comment those are use for display
 // assign HEX0 = '1;
 // assign HEX1 = '1;
-//assign HEX2 = '1;
-//assign HEX3 = '1;
-//assign HEX4 = '1;
-//assign HEX5 = '1;
-//assign HEX6 = '1;
-//assign HEX7 = '1;
+// assign HEX2 = '1;
+// assign HEX3 = '1;
+assign HEX4 = '1;
+assign HEX5 = '1;
+assign HEX6 = '1;
+assign HEX7 = '1;
 endmodule
